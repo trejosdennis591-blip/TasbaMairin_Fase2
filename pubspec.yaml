@@ -1,0 +1,43 @@
+name: flutter_application_1
+description: "Aplicación de intercambio comunitario."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  http: 1.6.0
+  image_picker: ^1.2.3
+  shared_preferences: ^2.2.3
+  http_parser: ^4.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/logo.jpeg
+    - assets/images/fondo_login.jpg
+    - assets/images/perfil_maria.jpg
+    - assets/images/agricola.jpg
+    - assets/images/artesanias.jpg
+    - assets/images/plantas.jpg
+    - assets/images/alimentos.jpg
+    - assets/images/verduras.jpg
+    - assets/images/bambu.jpg
+    - assets/images/plantas_medicinales.jpg
+    - assets/images/logo_sin_mujeres.png
+    - assets/images/mujer_centro.png
+    - assets/images/mujer_derecha.png
+    - assets/images/mujer_izquierda.png
