@@ -38,7 +38,6 @@ class _ProductCardState
 
     if (widget.producto.imagenBase64 != null &&
         widget.producto.imagenBase64!.isNotEmpty) {
-
       try {
         final Uint8List bytes =
             base64Decode(
@@ -50,6 +49,10 @@ class _ProductCardState
           width: double.infinity,
           height: 180,
           fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            return imagenPredeterminada();
+          },
         );
       } catch (_) {
         return imagenPredeterminada();
@@ -72,22 +75,56 @@ class _ProductCardState
           width: double.infinity,
           height: 180,
           fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            return imagenPredeterminada();
+          },
         );
       }
     }
 
     // ========================================================
-    // IMAGEN ASSET
+    // IMAGEN DEL BACKEND
     // ========================================================
 
     if (widget.producto.imagen != null &&
         widget.producto.imagen!.isNotEmpty) {
 
+      String url =
+          widget.producto.imagen!;
+
+      // El backend devuelve:
+      // /uploads/productos/archivo.jpg
+
+      if (url.startsWith('/')) {
+        url =
+            'http://192.168.1.26:3000$url';
+      }
+
+      // Si ya viene como URL completa
+      if (url.startsWith('http')) {
+        return Image.network(
+          url,
+          width: double.infinity,
+          height: 180,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            return imagenPredeterminada();
+          },
+        );
+      }
+
+      // Si por alguna razón viene como asset
       return Image.asset(
-        widget.producto.imagen!,
+        url,
         width: double.infinity,
         height: 180,
         fit: BoxFit.cover,
+        errorBuilder:
+            (context, error, stackTrace) {
+          return imagenPredeterminada();
+        },
       );
     }
 
@@ -123,7 +160,6 @@ class _ProductCardState
       return;
     }
 
-    // Saber cómo estaba antes
     final eraFavorito =
         FavoriteService.esFavorito(
       widget.producto,
@@ -133,30 +169,50 @@ class _ProductCardState
       guardandoFavorito = true;
     });
 
-    await FavoriteService.cambiarFavorito(
-      widget.producto,
-    );
+    try {
+      await FavoriteService.cambiarFavorito(
+        widget.producto,
+      );
 
-    if (!mounted) {
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    setState(() {
-      guardandoFavorito = false;
-    });
+      setState(() {
+        guardandoFavorito = false;
+      });
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(
-          eraFavorito
-              ? "Eliminado de favoritos"
-              : "Agregado a favoritos",
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            eraFavorito
+                ? "Eliminado de favoritos"
+                : "Agregado a favoritos",
+          ),
+          duration:
+              const Duration(seconds: 1),
         ),
-        duration:
-            const Duration(seconds: 1),
-      ),
-    );
+      );
+    } catch (e) {
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        guardandoFavorito = false;
+      });
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        SnackBar(
+          content: Text(
+            "No se pudo actualizar favoritos: $e",
+          ),
+        ),
+      );
+    }
   }
 
   // ==========================================================
@@ -223,7 +279,6 @@ class _ProductCardState
 
                 Text(
                   widget.producto.nombre,
-
                   style:
                       const TextStyle(
                     fontSize: 20,
@@ -279,7 +334,6 @@ class _ProductCardState
 
                 Text(
                   widget.producto.categoria,
-
                   style:
                       const TextStyle(
                     color:
@@ -352,7 +406,6 @@ class _ProductCardState
 
                         Navigator.push(
                           context,
-
                           MaterialPageRoute(
                             builder: (_) =>
                                 ProductDetailScreen(
@@ -366,7 +419,6 @@ class _ProductCardState
                       child:
                           const Text(
                         "Ver",
-
                         style:
                             TextStyle(
                           color:

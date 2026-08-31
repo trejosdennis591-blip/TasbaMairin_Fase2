@@ -7,14 +7,15 @@ import 'package:flutter_application_1/models/trade_request.dart';
 
 class TradeRequestService {
   static const String baseUrl =
-      'http://192.168.1.25:3000/api';
+      'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // TOKEN
   // ==========================================================
 
   static Future<String> _obtenerToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =
+        await SharedPreferences.getInstance();
 
     final token = prefs.getString('token');
 
@@ -26,39 +27,126 @@ class TradeRequestService {
   }
 
   // ==========================================================
+  // USUARIO LOGUEADO
+  // ==========================================================
+
+  static Future<int> _obtenerUsuarioId() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final usuarioId =
+        prefs.getString('usuario_id');
+
+    if (usuarioId == null ||
+        usuarioId.isEmpty) {
+      throw Exception(
+        'No se encontró el usuario logueado',
+      );
+    }
+
+    final id = int.tryParse(usuarioId);
+
+    if (id == null) {
+      throw Exception(
+        'El ID del usuario no es válido',
+      );
+    }
+
+    return id;
+  }
+
+  // ==========================================================
   // CREAR SOLICITUD
   // ==========================================================
 
-  static Future<void> crearSolicitud({
-    required int productoId,
-    required String nombreProducto,
-    required String solicitanteId,
-    required String nombreSolicitante,
-    required String mensaje,
-  }) async {
-    final token = await _obtenerToken();
+ static Future<void> crearSolicitud({
+  required int productoId,
+  required int usuarioOfreceId,
+  required String mensaje,
+}) async {
+    final token =
+        await _obtenerToken();
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/trueques'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'productoOfrecidoId': productoId,
-        'productoSolicitadoId': productoId,
-        'usuarioSolicitaId':
-            int.tryParse(solicitanteId) ?? 0,
-        'mensaje': mensaje,
-      }),
+    final usuarioLogueado =
+        await _obtenerUsuarioId();
+
+    print(
+      '==============================',
     );
 
-    final data = jsonDecode(response.body);
+    print(
+      'CREANDO TRUEQUE',
+    );
+
+    print(
+      'Usuario logueado: $usuarioLogueado',
+    );
+
+    print(
+      'Producto solicitado: $productoId',
+    );
+
+    print(
+      'Mensaje: $mensaje',
+    );
+
+    print(
+      '==============================',
+    );
+
+    final response = await http.post(
+      Uri.parse(
+        '$baseUrl/trueques',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $token',
+      },
+      body: jsonEncode({
+  'productoOfrecidoId':
+      productoId,
+
+  'productoSolicitadoId':
+      productoId,
+
+  'usuarioOfreceId':
+      usuarioOfreceId,
+
+  'usuarioSolicitaId':
+      usuarioLogueado,
+
+  'mensaje':
+      mensaje,
+}),
+    );
+
+    print(
+      'CREAR TRUEQUE STATUS: '
+      '${response.statusCode}',
+    );
+
+    print(
+      'CREAR TRUEQUE BODY: '
+      '${response.body}',
+    );
+
+    dynamic data;
+
+    try {
+      data = jsonDecode(response.body);
+    } catch (_) {
+      data = {};
+    }
 
     if (response.statusCode != 201) {
       throw Exception(
-        data['mensaje'] ??
-            'No se pudo crear el trueque',
+        data is Map &&
+                data['mensaje'] != null
+            ? data['mensaje']
+                .toString()
+            : 'No se pudo crear el trueque',
       );
     }
   }
@@ -69,18 +157,36 @@ class TradeRequestService {
 
   static Future<List<TradeRequest>>
       obtenerSolicitudes() async {
-    final token = await _obtenerToken();
+    final token =
+        await _obtenerToken();
 
     final response = await http.get(
       Uri.parse(
         '$baseUrl/trueques/mis-trueques',
       ),
       headers: {
-        'Authorization': 'Bearer $token',
+        'Authorization':
+            'Bearer $token',
       },
     );
 
-    final data = jsonDecode(response.body);
+    dynamic data;
+
+    try {
+      data = jsonDecode(response.body);
+    } catch (_) {
+      throw Exception(
+        'El servidor devolvió una respuesta inválida',
+      );
+    }
+
+    print(
+      'TRUEQUES RECIBIDOS:',
+    );
+
+    print(
+      data['trueques'],
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -89,86 +195,152 @@ class TradeRequestService {
       );
     }
 
-    return (data['trueques'] as List)
-        .map(
-          (t) => TradeRequest(
-            id: t['TruequeID'],
-            productoId:
-                t['ProductoSolicitadoID'],
-            nombreProducto: '',
-            solicitanteId:
-                t['UsuarioSolicitaID']
+    final lista =
+        data['trueques'];
+
+    if (lista is! List) {
+      return [];
+    }
+
+    return lista.map<TradeRequest>((t) {
+      return TradeRequest(
+        id: t['TruequeID'] is int
+            ? t['TruequeID']
+            : int.parse(
+                t['TruequeID'].toString(),
+              ),
+
+        productoId:
+            t['ProductoSolicitadoID'] is int
+                ? t['ProductoSolicitadoID']
+                : int.parse(
+                    t['ProductoSolicitadoID']
+                        .toString(),
+                  ),
+
+        nombreProducto:
+            t['NombreProducto']
+                    ?.toString() ??
+                '',
+
+        solicitanteId:
+            t['UsuarioSolicitaID']
                     .toString(),
-            nombreSolicitante: '',
-            mensaje: t['Mensaje'] ?? '',
-            estado: t['Estado'] ?? '',
-            fecha: DateTime.parse(
-              t['FechaInicio'],
-            ),
-          ),
-        )
-        .toList();
+
+        propietarioId:
+            t['UsuarioOfreceID']
+                    .toString(),
+
+        nombreSolicitante:
+            t['NombreSolicitante']
+                    ?.toString() ??
+                '',
+
+        mensaje:
+            t['Mensaje']
+                    ?.toString() ??
+                '',
+
+        estado:
+            t['Estado']
+                    ?.toString() ??
+                '',
+
+        fecha: DateTime.parse(
+          t['FechaInicio']
+              .toString(),
+        ),
+      );
+    }).toList();
   }
 
   // ==========================================================
   // APROBAR
   // ==========================================================
 
-static Future<void> aprobarSolicitud(
-  int id,
-) async {
-  final token = await _obtenerToken();
+  static Future<void>
+      aprobarSolicitud(int id) async {
+    final token =
+        await _obtenerToken();
 
-  print("ACEPTANDO TRUEQUE ID: $id");
-
-  final response = await http.put(
-    Uri.parse(
-      '$baseUrl/trueques/$id/estado',
-    ),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    },
-    body: jsonEncode({
-  'estado': 'Aceptado',
-    }),
-  );
-
-  print("STATUS: ${response.statusCode}");
-  print("BODY: ${response.body}");
-
-  if (response.statusCode != 200) {
-    throw Exception(
-      'No se pudo aprobar la solicitud',
+    final response =
+        await http.put(
+      Uri.parse(
+        '$baseUrl/trueques/$id/estado',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $token',
+      },
+      body: jsonEncode({
+        'estado': 'Aceptado',
+      }),
     );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'No se pudo aprobar la solicitud',
+      );
+    }
   }
-}
 
   // ==========================================================
   // RECHAZAR
   // ==========================================================
 
-  static Future<void> rechazarSolicitud(
-    int id,
-  ) async {
-    final token = await _obtenerToken();
+  static Future<void>
+      rechazarSolicitud(int id) async {
+    final token =
+        await _obtenerToken();
 
-    final response = await http.put(
+    final response =
+        await http.put(
       Uri.parse(
         '$baseUrl/trueques/$id/estado',
       ),
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $token',
       },
-         body: jsonEncode({
+      body: jsonEncode({
         'estado': 'Rechazado',
-     }),
+      }),
     );
 
     if (response.statusCode != 200) {
       throw Exception(
         'No se pudo rechazar la solicitud',
+      );
+    }
+  }
+
+  // ==========================================================
+  // CANCELAR
+  // ==========================================================
+
+  static Future<void>
+      cancelarSolicitud(int id) async {
+    final token =
+        await _obtenerToken();
+
+    final response =
+        await http.delete(
+      Uri.parse(
+        '$baseUrl/trueques/$id',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'No se pudo cancelar la solicitud',
       );
     }
   }

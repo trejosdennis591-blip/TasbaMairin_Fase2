@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter_application_1/models/trade_request.dart';
 import 'package:flutter_application_1/services/trade_request_service.dart';
 
@@ -12,32 +14,152 @@ class TradeRequestsScreen extends StatefulWidget {
 
 class _TradeRequestsScreenState
     extends State<TradeRequestsScreen> {
+  String usuarioId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    cargarUsuario();
+  }
+
+  Future<void> cargarUsuario() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final id =
+        prefs.getString('usuario_id') ?? '';
+
+    print('USUARIO LOGUEADO: $id');
+
+    if (!mounted) return;
+
+    setState(() {
+      usuarioId = id;
+    });
+  }
+
+  Future<void> cancelar(int id) async {
+    try {
+      await TradeRequestService.cancelarSolicitud(id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            'Solicitud cancelada correctamente.',
+          ),
+        ),
+      );
+
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> aceptar(int id) async {
+    try {
+      await TradeRequestService.aprobarSolicitud(id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Solicitud aceptada correctamente.',
+          ),
+        ),
+      );
+
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString(),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> rechazar(int id) async {
+    try {
+      await TradeRequestService.rechazarSolicitud(id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            'Solicitud rechazada correctamente.',
+          ),
+        ),
+      );
+
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString(),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor:
+          const Color(0xFFFFF4B8),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor:
+            const Color(0xFF016630),
         title: const Text(
-          "Solicitudes de Trueque",
+          'Solicitudes de Trueque',
           style: TextStyle(
             color: Colors.white,
           ),
         ),
-        iconTheme: const IconThemeData(
+        iconTheme:
+            const IconThemeData(
           color: Colors.white,
         ),
       ),
 
       body: FutureBuilder<List<TradeRequest>>(
         future:
-            TradeRequestService.obtenerSolicitudes(),
+            TradeRequestService
+                .obtenerSolicitudes(),
+
         builder: (context, snapshot) {
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child:
+                  CircularProgressIndicator(),
             );
           }
 
@@ -55,7 +177,7 @@ class _TradeRequestsScreenState
           if (solicitudes.isEmpty) {
             return const Center(
               child: Text(
-                "No hay solicitudes de trueque.",
+                'No hay solicitudes de trueque.',
                 style: TextStyle(
                   fontSize: 18,
                 ),
@@ -68,16 +190,44 @@ class _TradeRequestsScreenState
                 const EdgeInsets.all(16),
             itemCount:
                 solicitudes.length,
+
             itemBuilder:
                 (context, index) {
               final solicitud =
                   solicitudes[index];
+
+              final esSolicitante =
+                  usuarioId ==
+                      solicitud.solicitanteId;
+
+              final esPropietario =
+                  usuarioId ==
+                      solicitud.propietarioId;
+
+              final pendiente =
+                  solicitud.estado ==
+                      'Pendiente';
+
+              print(
+                'USUARIO LOGUEADO: $usuarioId',
+              );
+
+              print(
+                'SOLICITANTE: '
+                '${solicitud.solicitanteId}',
+              );
+
+              print(
+                'PROPIETARIO: '
+                '${solicitud.propietarioId}',
+              );
 
               return Card(
                 margin:
                     const EdgeInsets.only(
                   bottom: 12,
                 ),
+
                 shape:
                     RoundedRectangleBorder(
                   borderRadius:
@@ -85,25 +235,28 @@ class _TradeRequestsScreenState
                     15,
                   ),
                 ),
+
                 child: Padding(
                   padding:
                       const EdgeInsets.all(
                     16,
                   ),
+
                   child: Column(
                     crossAxisAlignment:
                         CrossAxisAlignment
                             .start,
+
                     children: [
                       Text(
                         solicitud
                             .nombreProducto,
+
                         style:
                             const TextStyle(
                           fontSize: 18,
                           fontWeight:
-                              FontWeight
-                                  .bold,
+                              FontWeight.bold,
                         ),
                       ),
 
@@ -112,7 +265,8 @@ class _TradeRequestsScreenState
                       ),
 
                       Text(
-                        "Solicitante: ${solicitud.nombreSolicitante}",
+                        'Solicitante: '
+                        '${solicitud.nombreSolicitante}',
                       ),
 
                       const SizedBox(
@@ -120,14 +274,14 @@ class _TradeRequestsScreenState
                       ),
 
                       Text(
-                        "Fecha: "
-                        "${solicitud.fecha.day}/"
-                        "${solicitud.fecha.month}/"
-                        "${solicitud.fecha.year}",
+                        'Fecha: '
+                        '${solicitud.fecha.day}/'
+                        '${solicitud.fecha.month}/'
+                        '${solicitud.fecha.year}',
+
                         style:
                             const TextStyle(
-                          color:
-                              Colors.grey,
+                          color: Colors.grey,
                         ),
                       ),
 
@@ -144,77 +298,137 @@ class _TradeRequestsScreenState
                       ),
 
                       Text(
-                        "Estado: ${solicitud.estado}",
-                        style:
-                            TextStyle(
-                          color: solicitud
-                                      .estado ==
-                                  "Aceptada"
-                              ? Colors.green
-                              : solicitud.estado ==
-                                      "Rechazada"
-                                  ? Colors.red
-                                  : Colors.orange,
-                          fontWeight:FontWeight.bold,
+                        'Estado: '
+                        '${solicitud.estado}',
+
+                        style: TextStyle(
+                          color:
+                              solicitud.estado ==
+                                      'Aceptado'
+                                  ? Colors.green
+                                  : solicitud.estado ==
+                                          'Rechazado'
+                                      ? Colors.red
+                                      : Colors.orange,
+
+                          fontWeight:
+                              FontWeight.bold,
                         ),
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(
+                        height: 12,
+                      ),
 
-if (solicitud.estado == "Pendiente")
-  Row(
-    children: [
-      Expanded(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-          ),
-          onPressed: () async {
-            await TradeRequestService
-                .aprobarSolicitud(
-              solicitud.id,
-            );
+                      // ==================================================
+                      // COMPRADOR / SOLICITANTE
+                      // SOLO PUEDE CANCELAR
+                      // ==================================================
 
-            if (!mounted) return;
+                     if (pendiente && esSolicitante && !esPropietario)
+                        SizedBox(
+                          width:
+                              double.infinity,
 
-            setState(() {});
-          },
-          child: const Text(
-            "Aceptar",
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
+                          child:
+                              ElevatedButton(
+                            style:
+                                ElevatedButton
+                                    .styleFrom(
+                              backgroundColor:
+                                  Colors.orange,
+                            ),
 
-      const SizedBox(width: 10),
+                            onPressed: () {
+                              cancelar(
+                                solicitud.id,
+                              );
+                            },
 
-      Expanded(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-          ),
-          onPressed: () async {
-            await TradeRequestService
-                .rechazarSolicitud(
-              solicitud.id,
-            );
+                            child:
+                                const Text(
+                              'Cancelar Solicitud',
 
-            if (!mounted) return;
+                              style:
+                                  TextStyle(
+                                color:
+                                    Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
 
-            setState(() {});
-          },
-          child: const Text(
-            "Rechazar",
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    ],
-  ),
+                      // ==================================================
+                      // PROVEEDOR / PROPIETARIO
+                      // PUEDE ACEPTAR O RECHAZAR
+                      // ==================================================
+
+                      if (pendiente && esPropietario && !esSolicitante)
+                        Row(
+                          children: [
+                            Expanded(
+                              child:
+                                  ElevatedButton(
+                                style:
+                                    ElevatedButton
+                                        .styleFrom(
+                                  backgroundColor:
+                                      Colors.green,
+                                ),
+
+                                onPressed: () {
+                                  aceptar(
+                                    solicitud.id,
+                                  );
+                                },
+
+                                child:
+                                    const Text(
+                                  'Aceptar',
+
+                                  style:
+                                      TextStyle(
+                                    color:
+                                        Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(
+                              width: 10,
+                            ),
+
+                            Expanded(
+                              child:
+                                  ElevatedButton(
+                                style:
+                                    ElevatedButton
+                                        .styleFrom(
+                                  backgroundColor:
+                                      Colors.red,
+                                ),
+
+                                onPressed: () {
+                                  rechazar(
+                                    solicitud.id,
+                                  );
+                                },
+
+                                child:
+                                    const Text(
+                                  'Rechazar',
+
+                                  style:
+                                      TextStyle(
+                                    color:
+                                        Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),

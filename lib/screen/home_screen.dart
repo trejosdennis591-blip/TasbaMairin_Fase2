@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/services/product_service.dart';
 import 'package:flutter_application_1/data/products_data.dart';
@@ -25,11 +26,38 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool cargandoProductos = true;
 
+  // ============================================================
+  // TIPO DE USUARIO
+  // ============================================================
+
+  String tipoUsuario = '';
+
+  // ============================================================
+  // INIT
+  // ============================================================
+
   @override
   void initState() {
     super.initState();
 
+    cargarTipoUsuario();
     cargarProductos();
+  }
+
+  // ============================================================
+  // CARGAR TIPO DE USUARIO
+  // ============================================================
+
+  Future<void> cargarTipoUsuario() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
+    setState(() {
+      tipoUsuario =
+          prefs.getString('tipo_usuario') ?? '';
+    });
   }
 
   // ============================================================
@@ -37,71 +65,104 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Future<void> cargarProductos() async {
-  setState(() {
-    cargandoProductos = true;
-  });
+    setState(() {
+      cargandoProductos = true;
+    });
 
-  try {
-    final productos =
-        await ProductService.listarProductos();
+    try {
+      final productos =
+          await ProductService.listarProductos();
 
-    productosRecientes.clear();
+      productosRecientes.clear();
 
-    productosRecientes.addAll(productos);
+      productosRecientes.addAll(productos);
 
-    debugPrint(
-      'PRODUCTOS CARGADOS: ${productosRecientes.length}',
-    );
-
-    for (final p in productosRecientes) {
       debugPrint(
-        '${p.id} - ${p.nombre}',
+        'PRODUCTOS CARGADOS: ${productosRecientes.length}',
+      );
+
+      for (final p in productosRecientes) {
+        debugPrint(
+          '${p.id} - ${p.nombre}',
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        'Error cargando productos: $e',
       );
     }
-  } catch (e) {
-    debugPrint(
-      'Error cargando productos: $e',
-    );
+
+    if (!mounted) return;
+
+    setState(() {
+      cargandoProductos = false;
+    });
   }
 
-  if (!mounted) return;
+  // ============================================================
+  // COLOR PRINCIPAL
+  // ============================================================
 
-  setState(() {
-    cargandoProductos = false;
-  });
-}
+  static const Color verde =
+      Color(0xFF016630);
 
-@override
-Widget build(BuildContext context) {
+  static const Color fondo =
+      Color(0xFFFFF4B8);
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor: fondo,
 
       // ========================================================
       // APP BAR
       // ========================================================
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor: verde,
         elevation: 0,
-        centerTitle: true,
+        automaticallyImplyLeading: false,
 
-        title: const Text(
-          "TasbaMairin",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        titleSpacing: 20,
+
+        title: const Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+          children: [
+            Text(
+              "TasbaMairin",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 21,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            SizedBox(height: 1),
+
+            Text(
+              "Nuestra comunidad",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
 
         actions: [
+
           // ====================================================
           // ACTUALIZAR
           // ====================================================
 
           IconButton(
-            onPressed: cargarProductos,
+            onPressed: cargandoProductos
+                ? null
+                : cargarProductos,
+
             icon: const Icon(
-              Icons.refresh,
+              Icons.refresh_rounded,
               color: Colors.white,
             ),
           ),
@@ -112,7 +173,8 @@ Widget build(BuildContext context) {
 
           IconButton(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(
                 const SnackBar(
                   content: Text(
                     "No tienes notificaciones nuevas.",
@@ -120,15 +182,14 @@ Widget build(BuildContext context) {
                 ),
               );
             },
+
             icon: const Icon(
-              Icons.notifications,
+              Icons.notifications_none_rounded,
               color: Colors.white,
             ),
           ),
 
-          const SizedBox(
-            width: 5,
-          ),
+          const SizedBox(width: 8),
         ],
       ),
 
@@ -140,42 +201,203 @@ Widget build(BuildContext context) {
         onRefresh: cargarProductos,
 
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics:
+              const AlwaysScrollableScrollPhysics(),
 
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            18,
+            16,
+            100,
+          ),
 
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
 
             children: [
+
               // ==================================================
               // BIENVENIDA
               // ==================================================
 
               const Text(
-                "¡BIENVENIDA!",
+                "¡Bienvenida!",
                 style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF016630),
+                  fontSize: 29,
+                  fontWeight: FontWeight.w800,
+                  color: verde,
                 ),
               ),
 
-              const SizedBox(
-                height: 5,
-              ),
+              const SizedBox(height: 4),
 
               const Text(
                 "Encuentra productos de tu comunidad",
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   color: Colors.black54,
                 ),
               ),
 
-              const SizedBox(
-                height: 20,
+              const SizedBox(height: 18),
+
+              // ==================================================
+              // BANNER DE TRUEQUE / ANUNCIO
+              // ==================================================
+
+              Container(
+                width: double.infinity,
+                height: 175,
+
+                decoration: BoxDecoration(
+                  color: verde,
+
+                  borderRadius:
+                      BorderRadius.circular(24),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black
+                          .withOpacity(0.12),
+                      blurRadius: 12,
+                      offset:
+                          const Offset(0, 5),
+                    ),
+                  ],
+                ),
+
+                child: Stack(
+                  children: [
+
+                    // ==================================================
+                    // CÍRCULO DECORATIVO
+                    // ==================================================
+
+                    Positioned(
+                      right: -35,
+                      top: -35,
+
+                      child: Container(
+                        width: 130,
+                        height: 130,
+
+                        decoration:
+                            BoxDecoration(
+                          color: Colors.white
+                              .withOpacity(0.08),
+
+                          shape:
+                              BoxShape.circle,
+                        ),
+                      ),
+                    ),
+
+                    // ==================================================
+                    // CÍRCULO DECORATIVO
+                    // ==================================================
+
+                    Positioned(
+                      right: 25,
+                      bottom: -55,
+
+                      child: Container(
+                        width: 120,
+                        height: 120,
+
+                        decoration:
+                            BoxDecoration(
+                          color: Colors.white
+                              .withOpacity(0.06),
+
+                          shape:
+                              BoxShape.circle,
+                        ),
+                      ),
+                    ),
+
+                    // ==================================================
+                    // CONTENIDO DEL ANUNCIO
+                    // ==================================================
+
+                    Padding(
+                      padding:
+                          const EdgeInsets.all(22),
+
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                        mainAxisAlignment:
+                            MainAxisAlignment.center,
+
+                        children: const [
+
+                          Row(
+                            children: [
+
+                              Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+
+                              SizedBox(width: 10),
+
+                              Text(
+                                "Haz trueque",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 25,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          SizedBox(height: 8),
+
+                          Text(
+                            "Intercambia productos con tu comunidad",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          SizedBox(height: 12),
+
+                          Row(
+                            children: [
+
+                              Icon(
+                                Icons.campaign_rounded,
+                                color: Colors.white,
+                                size: 19,
+                              ),
+
+                              SizedBox(width: 7),
+
+                              Text(
+                                "Anuncios de la comunidad",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
+
+              const SizedBox(height: 20),
 
               // ==================================================
               // BUSCADOR
@@ -186,73 +408,114 @@ Widget build(BuildContext context) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const SearchScreen(),
+                      builder: (_) =>
+                          const SearchScreen(),
                     ),
                   );
                 },
 
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 15,
+                  width: double.infinity,
+
+                  padding:
+                      const EdgeInsets.symmetric(
+                    horizontal: 17,
                     vertical: 15,
                   ),
 
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(
-                      15,
-                    ),
+
+                    borderRadius:
+                        BorderRadius.circular(18),
+
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withOpacity(0.06),
+                        blurRadius: 8,
+                        offset:
+                            const Offset(0, 3),
+                      ),
+                    ],
                   ),
 
                   child: const Row(
                     children: [
+
                       Icon(
-                        Icons.search,
+                        Icons.search_rounded,
+                        color: verde,
+                        size: 25,
                       ),
 
-                      SizedBox(
-                        width: 10,
-                      ),
+                      SizedBox(width: 12),
 
-                      Text(
-                        "Buscar productos...",
-                        style: TextStyle(
-                          color: Colors.grey,
+                      Expanded(
+                        child: Text(
+                          "¿Qué estás buscando?",
+                          style: TextStyle(
+                            color: Colors.black45,
+                            fontSize: 15,
+                          ),
                         ),
+                      ),
+
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.black38,
+                        size: 16,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(
-                height: 30,
-              ),
+              const SizedBox(height: 28),
 
               // ==================================================
               // CATEGORÍAS
               // ==================================================
 
-              const Text(
-                "Categorías",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF016630),
-                ),
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
+
+                children: const [
+
+                  Text(
+                    "Categorías",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight:
+                          FontWeight.bold,
+                      color: verde,
+                    ),
+                  ),
+
+                  Text(
+                    "Ver todas",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          FontWeight.w600,
+                      color: verde,
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(
-                height: 15,
-              ),
+              const SizedBox(height: 14),
 
               SizedBox(
-                height: 130,
+                height: 135,
 
                 child: ListView(
-                  scrollDirection: Axis.horizontal,
+                  scrollDirection:
+                      Axis.horizontal,
 
                   children: [
+
                     // ==================================================
                     // AGRÍCOLA
                     // ==================================================
@@ -264,22 +527,22 @@ Widget build(BuildContext context) {
                           MaterialPageRoute(
                             builder: (_) =>
                                 const CategoryProductsScreen(
-                              categoria: "Agrícola",
+                              categoria:
+                                  "Agrícola",
                             ),
                           ),
                         );
                       },
 
-                      child: const CategoryCard(
+                      child:
+                          const CategoryCard(
                         imagen:
                             "assets/images/agricola.jpg",
                         texto: "Agrícola",
                       ),
                     ),
 
-                    const SizedBox(
-                      width: 12,
-                    ),
+                    const SizedBox(width: 12),
 
                     // ==================================================
                     // ARTESANÍAS
@@ -292,22 +555,22 @@ Widget build(BuildContext context) {
                           MaterialPageRoute(
                             builder: (_) =>
                                 const CategoryProductsScreen(
-                              categoria: "Artesanías",
+                              categoria:
+                                  "Artesanías",
                             ),
                           ),
                         );
                       },
 
-                      child: const CategoryCard(
+                      child:
+                          const CategoryCard(
                         imagen:
                             "assets/images/artesanias.jpg",
                         texto: "Artesanías",
                       ),
                     ),
 
-                    const SizedBox(
-                      width: 12,
-                    ),
+                    const SizedBox(width: 12),
 
                     // ==================================================
                     // PLANTAS
@@ -320,22 +583,22 @@ Widget build(BuildContext context) {
                           MaterialPageRoute(
                             builder: (_) =>
                                 const CategoryProductsScreen(
-                              categoria: "Plantas",
+                              categoria:
+                                  "Plantas",
                             ),
                           ),
                         );
                       },
 
-                      child: const CategoryCard(
+                      child:
+                          const CategoryCard(
                         imagen:
                             "assets/images/plantas.jpg",
                         texto: "Plantas",
                       ),
                     ),
 
-                    const SizedBox(
-                      width: 12,
-                    ),
+                    const SizedBox(width: 12),
 
                     // ==================================================
                     // ALIMENTOS
@@ -348,13 +611,15 @@ Widget build(BuildContext context) {
                           MaterialPageRoute(
                             builder: (_) =>
                                 const CategoryProductsScreen(
-                              categoria: "Alimentos",
+                              categoria:
+                                  "Alimentos",
                             ),
                           ),
                         );
                       },
 
-                      child: const CategoryCard(
+                      child:
+                          const CategoryCard(
                         imagen:
                             "assets/images/alimentos.jpg",
                         texto: "Alimentos",
@@ -364,92 +629,160 @@ Widget build(BuildContext context) {
                 ),
               ),
 
-              const SizedBox(
-                height: 30,
-              ),
+              const SizedBox(height: 28),
 
               // ==================================================
-              // DESTACADOS
+              // PRODUCTOS DESTACADOS
               // ==================================================
 
-              const Text(
-                "Productos destacados",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF016630),
-                ),
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
+
+                children: const [
+
+                  Text(
+                    "Productos destacados",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight:
+                          FontWeight.bold,
+                      color: verde,
+                    ),
+                  ),
+                ],
               ),
 
-              const SizedBox(
-                height: 15,
-              ),
+              const SizedBox(height: 14),
 
               ...productosDestacados.map(
-                (producto) => ProductCard(
-                  producto: producto,
+                (producto) =>
+                    Padding(
+                  padding:
+                      const EdgeInsets.only(
+                    bottom: 14,
+                  ),
+
+                  child: ProductCard(
+                    producto: producto,
+                  ),
                 ),
               ),
 
-              const SizedBox(
-                height: 30,
-              ),
+              const SizedBox(height: 14),
 
               // ==================================================
               // PRODUCTOS RECIENTES
               // ==================================================
 
-              const Text(
-                "Productos publicados recientemente",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF016630),
-                ),
-              ),
+              Row(
+                mainAxisAlignment:
+                    MainAxisAlignment.spaceBetween,
 
-              const SizedBox(
-                height: 15,
-              ),
+                children: const [
 
-              if (cargandoProductos)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(
-                      20,
-                    ),
-
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF016630),
-                    ),
-                  ),
-                )
-              else if (productosRecientes.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      vertical: 20,
-                    ),
-
+                  Expanded(
                     child: Text(
-                      "Todavía no hay productos publicados.",
+                      "Publicados recientemente",
                       style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 16,
+                        fontSize: 22,
+                        fontWeight:
+                            FontWeight.bold,
+                        color: verde,
                       ),
                     ),
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // ==================================================
+              // CARGANDO
+              // ==================================================
+
+              if (cargandoProductos)
+
+                const Center(
+                  child: Padding(
+                    padding:
+                        EdgeInsets.all(25),
+
+                    child:
+                        CircularProgressIndicator(
+                      color: verde,
+                    ),
+                  ),
                 )
+
+              // ==================================================
+              // SIN PRODUCTOS
+              // ==================================================
+
+              else if (
+                productosRecientes.isEmpty
+              )
+
+                Container(
+                  width: double.infinity,
+
+                  padding:
+                      const EdgeInsets.all(25),
+
+                  decoration:
+                      BoxDecoration(
+                    color: Colors.white,
+
+                    borderRadius:
+                        BorderRadius.circular(18),
+                  ),
+
+                  child: const Column(
+                    children: [
+
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 45,
+                        color: Colors.grey,
+                      ),
+
+                      SizedBox(height: 10),
+
+                      Text(
+                        "Todavía no hay productos publicados.",
+                        textAlign:
+                            TextAlign.center,
+
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+
+              // ==================================================
+              // PRODUCTOS
+              // ==================================================
+
               else
+
                 ...productosRecientes.map(
-                  (producto) => ProductCard(
-                    producto: producto,
+                  (producto) =>
+                      Padding(
+                    padding:
+                        const EdgeInsets.only(
+                      bottom: 14,
+                    ),
+
+                    child: ProductCard(
+                      producto: producto,
+                    ),
                   ),
                 ),
 
-              const SizedBox(
-                height: 30,
-              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -457,46 +790,75 @@ Widget build(BuildContext context) {
 
       // ========================================================
       // BOTÓN PUBLICAR
+      // SOLO PARA PROVEEDORES
       // ========================================================
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF016630),
+      floatingActionButton:
+          tipoUsuario.toLowerCase() ==
+                  'proveedor'
+              ? FloatingActionButton.extended(
 
-        onPressed: () async {
-          final resultado = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  const PublishProductScreen(),
-            ),
-          );
+                  backgroundColor: verde,
 
-          if (resultado == true) {
-            await cargarProductos();
-          }
-        },
+                  elevation: 5,
 
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-        ),
-      ),
+                  onPressed: () async {
+                    final resultado =
+                        await Navigator.push(
+                      context,
+
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const PublishProductScreen(),
+                      ),
+                    );
+
+                    if (resultado == true) {
+                      await cargarProductos();
+                    }
+                  },
+
+                  icon: const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                  ),
+
+                  label: const Text(
+                    "Publicar",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+                )
+              : null,
 
       // ========================================================
       // NAVEGACIÓN
       // ========================================================
 
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar:
+          BottomNavigationBar(
+
         currentIndex: 0,
 
-        selectedItemColor: const Color(0xFF016630),
+        selectedItemColor: verde,
 
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor:
+            Colors.grey,
 
-        type: BottomNavigationBarType.fixed,
+        backgroundColor:
+            Colors.white,
+
+        elevation: 10,
+
+        type:
+            BottomNavigationBarType.fixed,
 
         onTap: (index) {
           switch (index) {
+
             // ==================================================
             // INICIO
             // ==================================================
@@ -549,30 +911,31 @@ Widget build(BuildContext context) {
         },
 
         items: const [
+
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.home,
+              Icons.home_rounded,
             ),
             label: "Inicio",
           ),
 
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.favorite,
+              Icons.favorite_border_rounded,
             ),
             label: "Favoritos",
           ),
 
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.person,
+              Icons.person_outline_rounded,
             ),
             label: "Perfil",
           ),
 
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.message,
+              Icons.chat_bubble_outline_rounded,
             ),
             label: "Mensajes",
           ),

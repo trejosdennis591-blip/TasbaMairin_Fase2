@@ -8,7 +8,9 @@ import 'package:flutter_application_1/services/trade_request_service.dart';
 import 'package:flutter_application_1/screen/settings_screen.dart';
 import 'package:flutter_application_1/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_application_1/screen/my_reports_screen.dart';
+import 'package:flutter_application_1/services/favorite_service.dart';
+import 'package:flutter_application_1/services/product_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -40,6 +42,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int cantidadFavoritos = 0;
   int cantidadTrueques = 0;
 
+  // ==========================================================
+  // COLORES DEL PROYECTO
+  // ==========================================================
+
+  static const Color verde = Color(0xFF016630);
+  static const Color naranja = Color(0xFFD0872E);
+  static const Color fondo = Color(0xFFFFF8D6);
+
+  // ==========================================================
+  // INIT
+  // ==========================================================
+
   @override
   void initState() {
     super.initState();
@@ -50,10 +64,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // CARGAR PERFIL
   // ==========================================================
 
- Future<void> cargarPerfil() async {
+  Future<void> cargarPerfil() async {
   final prefs = await SharedPreferences.getInstance();
 
   int cantidadTruequesLocal = 0;
+  int cantidadFavoritosLocal = 0;
+  int cantidadProductosLocal = 0;
 
   try {
     final solicitudes =
@@ -63,6 +79,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   } catch (e) {
     print('No se pudieron cargar los trueques: $e');
   }
+
+  // ==========================================================
+  // CARGAR FAVORITOS
+  // ==========================================================
+
+  try {
+    cantidadFavoritosLocal =
+        await FavoriteService.cantidadFavoritos();
+  } catch (e) {
+    print('No se pudieron cargar los favoritos: $e');
+  }
+
+  // ==========================================================
+  // CARGAR PRODUCTOS DEL PROVEEDOR
+  // ==========================================================
+
+  if (prefs.getString('tipo_usuario')?.toLowerCase() ==
+    "proveedor") {
+  try {
+    final productos =
+        await ProductService.obtenerMisProductos();
+
+    print(
+      "PERFIL - Total productos: ${productos.length}",
+    );
+
+    cantidadProductosLocal = productos.length;
+  } catch (e) {
+    print(
+      'No se pudieron cargar los productos: $e',
+    );
+  }
+}
 
   if (!mounted) return;
 
@@ -78,20 +127,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     fotoPerfil =
         prefs.getString('foto_perfil');
 
-    print('========================');
-    print('FOTO PERFIL GUARDADA:');
-    print(fotoPerfil);
-    print('========================');
-
-    cantidadProductos = 0;
-    cantidadFavoritos = 0;
-
-    cantidadTrueques =
-        cantidadTruequesLocal;
+    cantidadProductos = cantidadProductosLocal;
+    cantidadFavoritos = cantidadFavoritosLocal;
+    cantidadTrueques = cantidadTruequesLocal;
 
     cargando = false;
   });
 }
+
+
 
   // ==========================================================
   // EDITAR PERFIL
@@ -125,8 +169,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text(
             "Cerrar sesión",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: verde,
+            ),
           ),
           content: const Text(
             "¿Seguro que quieres cerrar tu sesión?",
@@ -134,26 +185,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                  false,
-                );
+                Navigator.pop(dialogContext, false);
               },
               child: const Text(
                 "Cancelar",
+                style: TextStyle(
+                  color: Colors.grey,
+                ),
               ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                  true,
-                );
+                Navigator.pop(dialogContext, true);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
               child: const Text(
                 "Cerrar sesión",
                 style: TextStyle(
-                  color: Colors.red,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -166,12 +217,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // Borrar token y datos del usuario.
     await AuthService.logout();
 
     if (!mounted) return;
 
-    // Volver al login y eliminar las pantallas anteriores.
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
@@ -182,25 +231,115 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ==========================================================
+  // BOTÓN DE OPCIÓN
+  // ==========================================================
+
+  Widget opcionPerfil({
+    required IconData icono,
+    required String titulo,
+    required VoidCallback onTap,
+    Color color = verde,
+    String? subtitulo,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 15,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    icono,
+                    color: color,
+                    size: 24,
+                  ),
+                ),
+
+                const SizedBox(width: 15),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        titulo,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF222222),
+                        ),
+                      ),
+
+                      if (subtitulo != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitulo,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey.shade400,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
   // BUILD
   // ==========================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor: fondo,
 
       // ========================================================
       // APP BAR
       // ========================================================
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor: verde,
+        elevation: 0,
         centerTitle: true,
-
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
 
         title: const Text(
           "Mi Perfil",
@@ -208,6 +347,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
+        ),
+
+        iconTheme: const IconThemeData(
+          color: Colors.white,
         ),
       ),
 
@@ -217,517 +360,467 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       body: cargando
           ? const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: verde,
+              ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  const SizedBox(
-                    height: 10,
-                  ),
-
                   // ==================================================
-                  // FOTO DE PERFIL
-                  // ==================================================
-
-                  CircleAvatar(
-  radius: 60,
-  backgroundColor: const Color(0xFF016630),
-
-  backgroundImage: (fotoPerfil != null &&
-          fotoPerfil!.isNotEmpty)
-      ? NetworkImage(
-          "http://192.168.1.25:3000$fotoPerfil",
-        )
-      : null,
-
-  child: (fotoPerfil == null ||
-          fotoPerfil!.isEmpty)
-      ? const Icon(
-          Icons.person,
-          size: 60,
-          color: Colors.white,
-        )
-      : null,
-),
-
-                  const SizedBox(
-                    height: 20,
-                  ),
-
-                  // ==================================================
-                  // NOMBRE
-                  // ==================================================
-
-                  Text(
-                    "$nombre $apellido",
-                    textAlign: TextAlign.center,
-
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF016630),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  // ==================================================
-                  // CORREO
-                  // ==================================================
-
-                  if (correo.isNotEmpty)
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-
-                      children: [
-                        const Icon(
-                          Icons.email,
-                          color: Colors.grey,
-                        ),
-
-                        const SizedBox(
-                          width: 5,
-                        ),
-
-                        Flexible(
-                          child: Text(
-                            correo,
-                            textAlign: TextAlign.center,
-
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  // ==================================================
-                  // TELÉFONO
-                  // ==================================================
-
-                  if (telefono.isNotEmpty)
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center,
-
-                      children: [
-                        const Icon(
-                          Icons.phone,
-                          color: Colors.grey,
-                        ),
-
-                        const SizedBox(
-                          width: 5,
-                        ),
-
-                        Text(
-                          telefono,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(
-                    height: 8,
-                  ),
-
-                  // ==================================================
-                  // TIPO DE USUARIO
-                  // ==================================================
-
-                  if (tipoUsuario.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 7,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD0872E),
-                        borderRadius:
-                            BorderRadius.circular(20),
-                      ),
-
-                      child: Text(
-                        tipoUsuario,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(
-                    height: 30,
-                  ),
-
-                  // ==================================================
-                  // ESTADÍSTICAS
+                  // CABECERA DEL PERFIL
                   // ==================================================
 
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 20,
-                      horizontal: 15,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: verde,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(35),
+                        bottomRight: Radius.circular(35),
+                      ),
                     ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        5,
+                        20,
+                        30,
+                      ),
+                      child: Column(
+                        children: [
+                          // ========================================
+                          // FOTO
+                          // ========================================
 
-                    decoration: BoxDecoration(
-                      color: Colors.white,
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black
+                                      .withValues(alpha: 0.20),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 58,
+                              backgroundColor:
+                                  const Color(0xFFE8F5E9),
 
-                      borderRadius:
-                          BorderRadius.circular(20),
+                              backgroundImage:
+                                  (fotoPerfil != null &&
+                                          fotoPerfil!.isNotEmpty)
+                                      ? NetworkImage(
+                                          "http://192.168.1.26:3000$fotoPerfil",
+                                        )
+                                      : null,
+
+                              child:
+                                  (fotoPerfil == null ||
+                                          fotoPerfil!.isEmpty)
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 58,
+                                          color: verde,
+                                        )
+                                      : null,
+                            ),
+                          ),
+
+                          const SizedBox(height: 15),
+
+                          // ========================================
+                          // NOMBRE
+                          // ========================================
+
+                          Text(
+                            "$nombre $apellido",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 25,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          const SizedBox(height: 7),
+
+                          // ========================================
+                          // CORREO
+                          // ========================================
+
+                          if (correo.isNotEmpty)
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.email_outlined,
+                                  size: 17,
+                                  color: Colors.white70,
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    correo,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                          const SizedBox(height: 12),
+
+                          // ========================================
+                          // TIPO DE USUARIO
+                          // ========================================
+
+                          if (tipoUsuario.isNotEmpty)
+                            Container(
+                              padding:
+                                  const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: naranja,
+                                borderRadius:
+                                    BorderRadius.circular(30),
+                              ),
+                              child: Text(
+                                tipoUsuario,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+                  ),
 
-                    child: Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceAround,
+                  // ==================================================
+                  // CONTENIDO
+                  // ==================================================
 
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
                       children: [
-                        Column(
-                          children: [
-                            Text(
-                              cantidadProductos.toString(),
+                       // ============================================================
+// ESTADÍSTICAS SEGÚN TIPO DE USUARIO
+// ============================================================
 
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight:
-                                    FontWeight.bold,
-                                color:
-                                    Color(0xFF016630),
-                              ),
-                            ),
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.symmetric(
+    vertical: 20,
+    horizontal: 10,
+  ),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(22),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.06),
+        blurRadius: 12,
+        offset: const Offset(0, 5),
+      ),
+    ],
+  ),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      if (tipoUsuario.toLowerCase() == "comprador") ...[
+        // FAVORITOS
+        _estadistica(
+          cantidadFavoritos,
+          "Favoritos",
+          Icons.favorite_border,
+        ),
 
-                            const SizedBox(
-                              height: 5,
-                            ),
+        _separador(),
 
-                            const Text(
-                              "Productos",
+        // TRUEQUES
+        _estadistica(
+          cantidadTrueques,
+          "Trueques",
+          Icons.swap_horiz,
+        ),
+      ] else ...[
+        // PRODUCTOS
+        _estadistica(
+          cantidadProductos,
+          "Productos",
+          Icons.inventory_2_outlined,
+        ),
+
+        _separador(),
+
+        // TRUEQUES
+        _estadistica(
+          cantidadTrueques,
+          "Trueques",
+          Icons.swap_horiz,
+        ),
+      ],
+    ],
+  ),
+),
+
+const SizedBox(height: 28),
+
+                        // ============================================
+                        // SECCIÓN
+                        // ============================================
+
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Mi cuenta",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade800,
                             ),
-                          ],
+                          ),
                         ),
 
-                        Column(
-                          children: [
-                            Text(
-                              cantidadFavoritos.toString(),
+                        const SizedBox(height: 14),
 
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight:
-                                    FontWeight.bold,
-                                color:
-                                    Color(0xFF016630),
-                              ),
-                            ),
+                        // ============================================
+                        // EDITAR PERFIL
+                        // ============================================
 
-                            const SizedBox(
-                              height: 5,
-                            ),
-
-                            const Text(
-                              "Favoritos",
-                            ),
-                          ],
+                        opcionPerfil(
+                          icono: Icons.person_outline,
+                          titulo: "Editar perfil",
+                          subtitulo:
+                              "Actualiza tus datos personales",
+                          onTap: editarPerfil,
                         ),
 
-                        Column(
-                          children: [
-                            Text(
-                              cantidadTrueques.toString(),
+                        // ============================================
+                        // MIS PUBLICACIONES
+                        // SOLO PARA PROVEEDORES
+                        // ============================================
 
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight:
-                                    FontWeight.bold,
-                                color:
-                                    Color(0xFF016630),
+if (tipoUsuario.toLowerCase() == "proveedor")
+  opcionPerfil(
+    icono: Icons.inventory_2_outlined,
+    titulo: "Mis publicaciones",
+    subtitulo:
+        "Administra tus productos",
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              const MyProductsScreen(),
+        ),
+      );
+    },
+  ),
+
+                        // ============================================
+                        // TRUEQUES
+                        // ============================================
+
+                        opcionPerfil(
+                          icono: Icons.swap_horiz,
+                          titulo: "Solicitudes de trueque",
+                          subtitulo:
+                              "Revisa tus solicitudes",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const TradeRequestsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        // ============================================
+                        // REPORTES
+                        // ============================================
+
+                        opcionPerfil(
+                          icono: Icons.flag_outlined,
+                          titulo: "Mis reportes",
+                          subtitulo:
+                              "Consulta tus reportes realizados",
+                          color: Colors.red,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const MyReportsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // ============================================
+                        // CONFIGURACIÓN
+                        // ============================================
+
+                        opcionPerfil(
+                          icono: Icons.settings_outlined,
+                          titulo: "Configuración",
+                          subtitulo:
+                              "Preferencias de la aplicación",
+                          color: naranja,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const SettingsScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // ============================================
+                        // CERRAR SESIÓN
+                        // ============================================
+
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: OutlinedButton.icon(
+                            onPressed: cerrarSesion,
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(16),
                               ),
                             ),
-
-                            const SizedBox(
-                              height: 5,
+                            icon: const Icon(
+                              Icons.logout,
+                              color: Colors.red,
                             ),
-
-                            const Text(
-                              "Trueques",
+                            label: const Text(
+                              "Cerrar sesión",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ],
+                          ),
                         ),
+
+                        const SizedBox(height: 20),
+
+                        // ============================================
+                        // NOMBRE DEL PROYECTO
+                        // ============================================
+
+                        const Text(
+                          "TasbaMairin",
+                          style: TextStyle(
+                            color: verde,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        Text(
+                          "Intercambia • Comparte • Conecta",
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 11,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(
-                    height: 30,
-                  ),
-
-                  // ==================================================
-                  // EDITAR PERFIL
-                  // ==================================================
-
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF016630),
-
-                        minimumSize:
-                            const Size(0, 55),
-
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15),
-                        ),
-                      ),
-
-                      onPressed: editarPerfil,
-
-                      icon: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                      ),
-
-                      label: const Text(
-                        "Editar Perfil",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 15,
-                  ),
-
-                  // ==================================================
-                  // MIS PUBLICACIONES
-                  // ==================================================
-
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFF016630),
-                          width: 2,
-                        ),
-
-                        minimumSize:
-                            const Size(0, 55),
-
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15),
-                        ),
-                      ),
-
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const MyProductsScreen(),
-                          ),
-                        );
-                      },
-
-                      icon: const Icon(
-                        Icons.inventory_2,
-                        color: Color(0xFF016630),
-                      ),
-
-                      label: const Text(
-                        "Mis publicaciones",
-
-                        style: TextStyle(
-                          color: Color(0xFF016630),
-                          fontSize: 17,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 15,
-                  ),
-
-                  // ==================================================
-                  // SOLICITUDES DE TRUEQUE
-                  // ==================================================
-
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFF016630),
-                          width: 2,
-                        ),
-
-                        minimumSize:
-                            const Size(0, 55),
-
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15),
-                        ),
-                      ),
-
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const TradeRequestsScreen(),
-                          ),
-                        );
-                      },
-
-                      icon: const Icon(
-                        Icons.swap_horiz,
-                        color: Color(0xFF016630),
-                      ),
-
-                      label: const Text(
-                        "Solicitudes de Trueque",
-
-                        style: TextStyle(
-                          color: Color(0xFF016630),
-                          fontSize: 17,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 15,
-                  ),
-
-                  // ==================================================
-                  // CONFIGURACIÓN
-                  // ==================================================
-
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFFD0872E),
-                          width: 2,
-                        ),
-
-                        minimumSize:
-                            const Size(0, 55),
-
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15),
-                        ),
-                      ),
-
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const SettingsScreen(),
-                          ),
-                        );
-                      },
-
-                      icon: const Icon(
-                        Icons.settings,
-                        color: Color(0xFFD0872E),
-                      ),
-
-                      label: const Text(
-                        "Configuración",
-
-                        style: TextStyle(
-                          color: Color(0xFFD0872E),
-                          fontSize: 17,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 25,
-                  ),
-
-                  // ==================================================
-                  // CERRAR SESIÓN
-                  // ==================================================
-
-                  SizedBox(
-                    width: double.infinity,
-
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-
-                        minimumSize:
-                            const Size(0, 55),
-
-                        shape:
-                            RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15),
-                        ),
-                      ),
-
-                      onPressed: cerrarSesion,
-
-                      icon: const Icon(
-                        Icons.logout,
-                        color: Colors.white,
-                      ),
-
-                      label: const Text(
-                        "Cerrar sesión",
-
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(
-                    height: 30,
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  // ==========================================================
+  // WIDGET ESTADÍSTICA
+  // ==========================================================
+
+  Widget _estadistica(
+    int cantidad,
+    String titulo,
+    IconData icono,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icono,
+            color: verde,
+            size: 24,
+          ),
+
+          const SizedBox(height: 7),
+
+          Text(
+            cantidad.toString(),
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: verde,
+            ),
+          ),
+
+          const SizedBox(height: 3),
+
+          Text(
+            titulo,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // SEPARADOR DE ESTADÍSTICAS
+  // ==========================================================
+
+  Widget _separador() {
+    return Container(
+      width: 1,
+      height: 45,
+      color: Colors.grey.shade200,
     );
   }
 }

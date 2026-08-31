@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_application_1/services/auth_service.dart';
 
 import '../services/auth_service.dart';
 
@@ -21,16 +20,10 @@ class _EditProfileScreenState
     extends State<EditProfileScreen> {
 
   // ==========================================================
-  // CONTROLADORES
+  // CONTROLADOR
   // ==========================================================
 
   final TextEditingController nombreController =
-      TextEditingController();
-
-  final TextEditingController telefonoController =
-      TextEditingController();
-
-  final TextEditingController descripcionController =
       TextEditingController();
 
   // ==========================================================
@@ -40,10 +33,19 @@ class _EditProfileScreenState
   bool guardando = false;
 
   // ==========================================================
+  // DATOS
+  // ==========================================================
+
+  String telefono = '';
+  String correo = '';
+
+  // ==========================================================
   // FOTO
   // ==========================================================
 
   File? imagenPerfil;
+
+  String? fotoPerfilActual;
 
   final ImagePicker picker = ImagePicker();
 
@@ -59,21 +61,29 @@ class _EditProfileScreenState
   }
 
   // ==========================================================
-  // CARGAR DATOS DEL USUARIO
+  // CARGAR DATOS DEL PERFIL
   // ==========================================================
 
   Future<void> cargarDatosPerfil() async {
     final prefs =
         await SharedPreferences.getInstance();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       nombreController.text =
           prefs.getString('nombre') ?? '';
 
-      telefonoController.text =
+      telefono =
           prefs.getString('telefono') ?? '';
+
+      correo =
+          prefs.getString('correo') ?? '';
+
+      fotoPerfilActual =
+          prefs.getString('foto_perfil');
     });
   }
 
@@ -82,30 +92,86 @@ class _EditProfileScreenState
   // ==========================================================
 
   Future<void> seleccionarFoto() async {
+    if (guardando) {
+      return;
+    }
+
     try {
       final XFile? imagen =
           await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
+        maxWidth: 1000,
+        maxHeight: 1000,
       );
 
       if (imagen == null) {
         return;
       }
 
+      final archivo =
+          File(imagen.path);
+
+      if (!await archivo.exists()) {
+        throw Exception(
+          'El archivo seleccionado no existe.',
+        );
+      }
+
+      // ======================================================
+      // COMPROBAR EXTENSIÓN
+      // ======================================================
+
+      final ruta =
+          imagen.path.toLowerCase();
+
+      final esImagenValida =
+          ruta.endsWith('.jpg') ||
+          ruta.endsWith('.jpeg') ||
+          ruta.endsWith('.png') ||
+          ruta.endsWith('.webp');
+
+      if (!esImagenValida) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.orange,
+            content: Text(
+              'Selecciona una imagen JPG, JPEG, PNG o WEBP.',
+            ),
+          ),
+        );
+
+        return;
+      }
+
       if (!mounted) {
         return;
       }
+
+      // ======================================================
+      // GUARDAR FOTO NUEVA EN MEMORIA
+      // ======================================================
 
       setState(() {
-        imagenPerfil = File(imagen.path);
+        imagenPerfil = archivo;
       });
+
     } catch (e) {
+      debugPrint(
+        'ERROR SELECCIONANDO FOTO DE PERFIL: $e',
+      );
+
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
           content: Text(
@@ -121,18 +187,20 @@ class _EditProfileScreenState
   // ==========================================================
 
   Future<void> guardarPerfil() async {
+    if (guardando) {
+      return;
+    }
+
     final nombre =
         nombreController.text.trim();
-
-    final telefono =
-        telefonoController.text.trim();
 
     // ========================================================
     // VALIDACIÓN
     // ========================================================
 
     if (nombre.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           backgroundColor: Colors.orange,
           content: Text(
@@ -150,7 +218,11 @@ class _EditProfileScreenState
 
     try {
       // ======================================================
-      // ACTUALIZAR EN EL BACKEND
+      // ENVIAR AL BACKEND
+      //
+      // IMPORTANTE:
+      // El teléfono se manda sin modificar.
+      // La interfaz ya no permite editarlo.
       // ======================================================
 
       final respuesta =
@@ -161,15 +233,57 @@ class _EditProfileScreenState
             imagenPerfil?.path,
       );
 
-      if (!mounted) return;
+      // ======================================================
+      // GUARDAR DATOS DEVUELTOS POR EL BACKEND
+      // ======================================================
+
+      final prefs =
+          await SharedPreferences.getInstance();
+
+      final usuario =
+          respuesta['usuario'];
+
+      if (usuario != null) {
+
+        if (usuario['Nombre'] != null) {
+          await prefs.setString(
+            'nombre',
+            usuario['Nombre'].toString(),
+          );
+        }
+
+        if (usuario['Telefono'] != null) {
+          await prefs.setString(
+            'telefono',
+            usuario['Telefono'].toString(),
+          );
+        }
+
+        if (usuario['FotoPerfil'] != null) {
+          await prefs.setString(
+            'foto_perfil',
+            usuario['FotoPerfil'].toString(),
+          );
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         guardando = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      // ======================================================
+      // MENSAJE DE ÉXITO
+      // ======================================================
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor:
+              const Color(0xFF016630),
           content: Text(
             respuesta['mensaje'] ??
                 'Perfil actualizado correctamente.',
@@ -177,19 +291,30 @@ class _EditProfileScreenState
         ),
       );
 
+      // ======================================================
+      // VOLVER AL PERFIL
+      // ======================================================
+
       Navigator.pop(
         context,
         true,
       );
 
     } catch (e) {
-      if (!mounted) return;
+      debugPrint(
+        'ERROR ACTUALIZANDO PERFIL: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         guardando = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
           content: Text(
@@ -204,25 +329,21 @@ class _EditProfileScreenState
   }
 
   // ==========================================================
-  // CAMPO DE TEXTO
+  // CAMPO DE NOMBRE
   // ==========================================================
 
-  Widget campoTexto({
-    required String titulo,
-    required TextEditingController controller,
-    required String hint,
-    IconData? icon,
-    int maxLines = 1,
-  }) {
+  Widget campoNombre() {
     return Column(
       crossAxisAlignment:
           CrossAxisAlignment.start,
       children: [
-        Text(
-          titulo,
-          style: const TextStyle(
+
+        const Text(
+          'Nombre',
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
+            color: Color(0xFF016630),
           ),
         ),
 
@@ -231,28 +352,155 @@ class _EditProfileScreenState
         ),
 
         TextField(
-          controller: controller,
+          controller: nombreController,
           enabled: !guardando,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
 
-            prefixIcon: icon != null
-                ? Icon(
-                    icon,
-                    color:
-                        const Color(0xFF016630),
-                  )
-                : null,
+          decoration: InputDecoration(
+            hintText:
+                'Escribe tu nombre',
+
+            prefixIcon:
+                const Icon(
+              Icons.person_outline,
+              color: Color(0xFF016630),
+            ),
 
             filled: true,
 
-            fillColor: Colors.white,
+            fillColor:
+                Colors.grey.shade50,
 
-            border: OutlineInputBorder(
+            contentPadding:
+                const EdgeInsets.symmetric(
+              vertical: 17,
+              horizontal: 15,
+            ),
+
+            border:
+                OutlineInputBorder(
               borderRadius:
                   BorderRadius.circular(15),
+
+              borderSide:
+                  BorderSide.none,
             ),
+
+            enabledBorder:
+                OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(15),
+
+              borderSide:
+                  BorderSide(
+                color:
+                    Colors.grey.shade300,
+              ),
+            ),
+
+            focusedBorder:
+                OutlineInputBorder(
+              borderRadius:
+                  BorderRadius.circular(15),
+
+              borderSide:
+                  const BorderSide(
+                color:
+                    Color(0xFF016630),
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================================
+  // INFORMACIÓN NO EDITABLE
+  // ==========================================================
+
+  Widget campoInformacion({
+    required String titulo,
+    required String valor,
+    required IconData icono,
+  }) {
+    return Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+      children: [
+
+        Text(
+          titulo,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Color(0xFF016630),
+          ),
+        ),
+
+        const SizedBox(
+          height: 8,
+        ),
+
+        Container(
+          width: double.infinity,
+
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 15,
+            vertical: 17,
+          ),
+
+          decoration:
+              BoxDecoration(
+            color:
+                Colors.grey.shade200,
+
+            borderRadius:
+                BorderRadius.circular(15),
+
+            border:
+                Border.all(
+              color:
+                  Colors.grey.shade300,
+            ),
+          ),
+
+          child: Row(
+            children: [
+
+              Icon(
+                icono,
+                color:
+                    Colors.grey.shade600,
+              ),
+
+              const SizedBox(
+                width: 12,
+              ),
+
+              Expanded(
+                child: Text(
+                  valor.isEmpty
+                      ? 'No registrado'
+                      : valor,
+
+                  style:
+                      TextStyle(
+                    color:
+                        Colors.grey.shade700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+
+              Icon(
+                Icons.lock_outline,
+                size: 18,
+                color:
+                    Colors.grey.shade500,
+              ),
+            ],
           ),
         ),
       ],
@@ -264,24 +512,120 @@ class _EditProfileScreenState
   // ==========================================================
 
   Widget fotoPerfilWidget() {
+
+    // --------------------------------------------------------
+    // FOTO NUEVA SELECCIONADA
+    // --------------------------------------------------------
+
     if (imagenPerfil != null) {
-      return CircleAvatar(
-        radius: 60,
-        backgroundColor:
-            const Color(0xFF016630),
-        backgroundImage:
-            FileImage(imagenPerfil!),
+      return Container(
+        decoration:
+            BoxDecoration(
+          shape:
+              BoxShape.circle,
+
+          border:
+              Border.all(
+            color:
+                const Color(0xFFD0872E),
+            width: 4,
+          ),
+        ),
+
+        child: CircleAvatar(
+          radius: 62,
+
+          backgroundColor:
+              const Color(0xFF016630),
+
+          backgroundImage:
+              FileImage(
+            imagenPerfil!,
+          ),
+        ),
       );
     }
 
-    return const CircleAvatar(
-      radius: 60,
-      backgroundColor:
-          Color(0xFF016630),
-      child: Icon(
-        Icons.person,
-        size: 65,
-        color: Colors.white,
+    // --------------------------------------------------------
+    // FOTO ACTUAL DEL SERVIDOR
+    // --------------------------------------------------------
+
+    if (fotoPerfilActual != null &&
+        fotoPerfilActual!.isNotEmpty) {
+
+      String url;
+
+      if (fotoPerfilActual!
+          .startsWith('http')) {
+
+        url =
+            fotoPerfilActual!;
+
+      } else {
+
+        url =
+            'http://192.168.1.26:3000'
+            '$fotoPerfilActual';
+      }
+
+      return Container(
+        decoration:
+            BoxDecoration(
+          shape:
+              BoxShape.circle,
+
+          border:
+              Border.all(
+            color:
+                const Color(0xFFD0872E),
+            width: 4,
+          ),
+        ),
+
+        child: CircleAvatar(
+          radius: 62,
+
+          backgroundColor:
+              const Color(0xFF016630),
+
+          backgroundImage:
+              NetworkImage(url),
+
+          onBackgroundImageError:
+              (_, __) {},
+        ),
+      );
+    }
+
+    // --------------------------------------------------------
+    // SIN FOTO
+    // --------------------------------------------------------
+
+    return Container(
+      decoration:
+          BoxDecoration(
+        shape:
+            BoxShape.circle,
+
+        border:
+            Border.all(
+          color:
+              const Color(0xFFD0872E),
+          width: 4,
+        ),
+      ),
+
+      child: const CircleAvatar(
+        radius: 62,
+
+        backgroundColor:
+            Color(0xFF016630),
+
+        child: Icon(
+          Icons.person,
+          size: 65,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -293,8 +637,6 @@ class _EditProfileScreenState
   @override
   void dispose() {
     nombreController.dispose();
-    telefonoController.dispose();
-    descripcionController.dispose();
 
     super.dispose();
   }
@@ -319,6 +661,8 @@ class _EditProfileScreenState
         backgroundColor:
             const Color(0xFF016630),
 
+        elevation: 0,
+
         centerTitle: true,
 
         iconTheme:
@@ -330,6 +674,7 @@ class _EditProfileScreenState
           'Editar Perfil',
           style: TextStyle(
             color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -339,257 +684,447 @@ class _EditProfileScreenState
       // ======================================================
 
       body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(20),
-
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-
           children: [
 
-            // ================================================
-            // FOTO
-            // ================================================
+            // ==================================================
+            // CABECERA VERDE
+            // ==================================================
 
-            Center(
-              child: GestureDetector(
-                onTap: guardando
-                    ? null
-                    : seleccionarFoto,
+            Container(
+              width: double.infinity,
 
-                child: fotoPerfilWidget(),
+              padding:
+                  const EdgeInsets.only(
+                top: 25,
+                bottom: 75,
               ),
-            ),
 
-            const SizedBox(
-              height: 10,
-            ),
+              decoration:
+                  const BoxDecoration(
+                color:
+                    Color(0xFF016630),
 
-            const Center(
-              child: Text(
-                'Toca la foto para cambiarla',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
+                borderRadius:
+                    BorderRadius.only(
+                  bottomLeft:
+                      Radius.circular(35),
+                  bottomRight:
+                      Radius.circular(35),
                 ),
               ),
-            ),
 
-            const SizedBox(
-              height: 30,
-            ),
+              child: const Column(
+                children: [
 
-            // ================================================
-            // NOMBRE
-            // ================================================
-
-            campoTexto(
-              titulo: 'Nombre',
-              controller:
-                  nombreController,
-              hint:
-                  'Escribe tu nombre',
-              icon:
-                  Icons.person,
-            ),
-
-            const SizedBox(
-              height: 20,
-            ),
-
-            // ================================================
-            // TELÉFONO
-            // ================================================
-
-            campoTexto(
-              titulo: 'Teléfono',
-              controller:
-                  telefonoController,
-              hint:
-                  'Ej. 8888-8888',
-              icon:
-                  Icons.phone,
-            ),
-
-            const SizedBox(
-              height: 20,
-            ),
-
-            // ================================================
-            // DESCRIPCIÓN
-            // ================================================
-
-            campoTexto(
-              titulo: 'Descripción',
-              controller:
-                  descripcionController,
-              hint:
-                  'Cuéntanos algo sobre ti',
-              icon:
-                  Icons.info_outline,
-              maxLines: 4,
-            ),
-
-            const SizedBox(
-              height: 20,
-            ),
-
-            // ================================================
-            // CORREO
-            // ================================================
-
-            const Text(
-              'Correo electrónico',
-              style: TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-
-            const SizedBox(
-              height: 8,
-            ),
-
-            FutureBuilder<
-                SharedPreferences>(
-              future:
-                  SharedPreferences
-                      .getInstance(),
-
-              builder:
-                  (context, snapshot) {
-
-                final correo =
-                    snapshot.data
-                            ?.getString(
-                              'correo',
-                            ) ??
-                        'Sin correo';
-
-                return Container(
-                  width:
-                      double.infinity,
-
-                  padding:
-                      const EdgeInsets.all(
-                    16,
+                  Icon(
+                    Icons.manage_accounts,
+                    color:
+                        Colors.white,
+                    size: 30,
                   ),
 
-                  decoration:
-                      BoxDecoration(
-                    color:
-                        Colors.grey.shade200,
+                  SizedBox(
+                    height: 8,
+                  ),
 
-                    borderRadius:
-                        BorderRadius.circular(
-                      15,
+                  Text(
+                    'Personaliza tu perfil',
+                    style: TextStyle(
+                      color:
+                          Colors.white,
+                      fontSize: 21,
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
 
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.email,
+                  SizedBox(
+                    height: 5,
+                  ),
+
+                  Text(
+                    'Mantén actualizada tu información',
+                    style: TextStyle(
+                      color:
+                          Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ==================================================
+            // CONTENIDO
+            // ==================================================
+
+            Transform.translate(
+              offset:
+                  const Offset(0, -55),
+
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+
+                child: Column(
+                  children: [
+
+                    // ==========================================
+                    // FOTO
+                    // ==========================================
+
+                    GestureDetector(
+                      onTap: guardando
+                          ? null
+                          : seleccionarFoto,
+
+                      child:
+                          fotoPerfilWidget(),
+                    ),
+
+                    const SizedBox(
+                      height: 12,
+                    ),
+
+                    GestureDetector(
+                      onTap: guardando
+                          ? null
+                          : seleccionarFoto,
+
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 8,
+                        ),
+
+                        decoration:
+                            BoxDecoration(
+                          color:
+                              const Color(0xFFD0872E),
+
+                          borderRadius:
+                              BorderRadius.circular(
+                            20,
+                          ),
+                        ),
+
+                        child: const Row(
+                          mainAxisSize:
+                              MainAxisSize.min,
+
+                          children: [
+
+                            Icon(
+                              Icons.camera_alt,
+                              color:
+                                  Colors.white,
+                              size: 17,
+                            ),
+
+                            SizedBox(
+                              width: 7,
+                            ),
+
+                            Text(
+                              'Cambiar foto',
+                              style: TextStyle(
+                                color:
+                                    Colors.white,
+                                fontWeight:
+                                    FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 25,
+                    ),
+
+                    // ==========================================
+                    // TARJETA DE INFORMACIÓN
+                    // ==========================================
+
+                    Container(
+                      width:
+                          double.infinity,
+
+                      padding:
+                          const EdgeInsets.all(
+                        20,
+                      ),
+
+                      decoration:
+                          BoxDecoration(
                         color:
-                            Color(0xFF016630),
-                      ),
+                            Colors.white,
 
-                      const SizedBox(
-                        width: 10,
-                      ),
+                        borderRadius:
+                            BorderRadius.circular(
+                          25,
+                        ),
 
-                      Expanded(
-                        child: Text(
-                          correo,
-                          style:
-                              const TextStyle(
+                        boxShadow: [
+                          BoxShadow(
                             color:
-                                Colors.grey,
-                            fontSize:
-                                16,
+                                Colors.black.withValues(
+                              alpha: 0.08,
+                            ),
+                            blurRadius:
+                                12,
+                            offset:
+                                const Offset(
+                              0,
+                              5,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
+                        children: [
+
+                          // ====================================
+                          // TÍTULO
+                          // ====================================
+
+                          const Text(
+                            'Información personal',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight:
+                                  FontWeight.bold,
+                              color:
+                                  Color(0xFF016630),
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 5,
+                          ),
+
+                          const Text(
+                            'Puedes modificar tu nombre y foto de perfil.',
+                            style: TextStyle(
+                              color:
+                                  Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 25,
+                          ),
+
+                          // ====================================
+                          // NOMBRE
+                          // ====================================
+
+                          campoNombre(),
+
+                          const SizedBox(
+                            height: 20,
+                          ),
+
+                          // ====================================
+                          // TELÉFONO
+                          // ====================================
+
+                          campoInformacion(
+                            titulo:
+                                'Teléfono',
+                            valor:
+                                telefono,
+                            icono:
+                                Icons.phone_outlined,
+                          ),
+
+                          const SizedBox(
+                            height: 20,
+                          ),
+
+                          // ====================================
+                          // CORREO
+                          // ====================================
+
+                          campoInformacion(
+                            titulo:
+                                'Correo electrónico',
+                            valor:
+                                correo,
+                            icono:
+                                Icons.email_outlined,
+                          ),
+
+                          const SizedBox(
+                            height: 30,
+                          ),
+
+                          // ====================================
+                          // BOTÓN GUARDAR
+                          // ====================================
+
+                          SizedBox(
+                            width:
+                                double.infinity,
+
+                            height:
+                                55,
+
+                            child:
+                                ElevatedButton.icon(
+                              style:
+                                  ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color(
+                                  0xFF016630,
+                                ),
+
+                                disabledBackgroundColor:
+                                    const Color(
+                                  0xFF7A9E8A,
+                                ),
+
+                                elevation:
+                                    2,
+
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                    15,
+                                  ),
+                                ),
+                              ),
+
+                              onPressed:
+                                  guardando
+                                      ? null
+                                      : guardarPerfil,
+
+                              icon: guardando
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child:
+                                          CircularProgressIndicator(
+                                        color:
+                                            Colors.white,
+                                        strokeWidth:
+                                            3,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.save_outlined,
+                                      color:
+                                          Colors.white,
+                                    ),
+
+                              label:
+                                  Text(
+                                guardando
+                                    ? 'Guardando...'
+                                    : 'Guardar cambios',
+
+                                style:
+                                    const TextStyle(
+                                  color:
+                                      Colors.white,
+                                  fontSize:
+                                      17,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(
+                      height: 25,
+                    ),
+
+                    // ==========================================
+                    // AVISO
+                    // ==========================================
+
+                    Container(
+                      width:
+                          double.infinity,
+
+                      padding:
+                          const EdgeInsets.all(
+                        15,
+                      ),
+
+                      decoration:
+                          BoxDecoration(
+                        color:
+                            Colors.white.withValues(
+                          alpha: 0.75,
+                        ),
+
+                        borderRadius:
+                            BorderRadius.circular(
+                          15,
+                        ),
+
+                        border:
+                            Border.all(
+                          color:
+                              const Color(
+                            0xFFD0872E,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
 
-            const SizedBox(
-              height: 35,
-            ),
+                      child: const Row(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
 
-            // ================================================
-            // GUARDAR
-            // ================================================
+                        children: [
 
-            SizedBox(
-              width:
-                  double.infinity,
+                          Icon(
+                            Icons.info_outline,
+                            color:
+                                Color(0xFFD0872E),
+                          ),
 
-              height: 55,
+                          SizedBox(
+                            width: 10,
+                          ),
 
-              child:
-                  ElevatedButton.icon(
-                style:
-                    ElevatedButton
-                        .styleFrom(
-                  backgroundColor:
-                      const Color(
-                    0xFF016630,
-                  ),
-
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(
-                      15,
-                    ),
-                  ),
-                ),
-
-                onPressed:
-                    guardando
-                        ? null
-                        : guardarPerfil,
-
-                icon: guardando
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child:
-                            CircularProgressIndicator(
-                          color:
-                              Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.save,
-                        color:
-                            Colors.white,
+                          Expanded(
+                            child: Text(
+                              'El teléfono y correo electrónico están vinculados a tu cuenta y no se pueden modificar desde aquí.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color:
+                                    Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
 
-                label: Text(
-                  guardando
-                      ? 'Guardando...'
-                      : 'Guardar cambios',
-
-                  style:
-                      const TextStyle(
-                    color:
-                        Colors.white,
-                    fontSize: 17,
-                  ),
+                    const SizedBox(
+                      height: 25,
+                    ),
+                  ],
                 ),
               ),
-            ),
-
-            const SizedBox(
-              height: 30,
             ),
           ],
         ),

@@ -33,28 +33,38 @@ class _MyProductsScreenState
   // ==========================================================
 
   Future<void> cargarProductos() async {
-    try {
-      final lista =
-          await ProductService.obtenerMisProductos();
+  try {
+    final lista =
+        await ProductService.obtenerMisProductos();
 
-      if (!mounted) return;
+    print(
+      "MIS PUBLICACIONES - Total: ${lista.length}",
+    );
 
-      setState(() {
-        productos = lista;
-        cargando = false;
-      });
-    } catch (e) {
-      debugPrint(
-        'Error cargando mis productos: $e',
-      );
+    for (final p in lista) {
+  print(
+    "ID: ${p.id} - ${p.nombre}",
+  );
+}
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      setState(() {
-        cargando = false;
-      });
-    }
+    setState(() {
+      productos = lista;
+      cargando = false;
+    });
+  } catch (e) {
+    debugPrint(
+      'Error cargando mis productos: $e',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      cargando = false;
+    });
   }
+}
 
   // ==========================================================
   // IMAGEN DEL PRODUCTO
@@ -79,14 +89,21 @@ class _MyProductsScreenState
     }
 
     if (producto.imagen != null &&
-        producto.imagen!.isNotEmpty) {
-      return Image.asset(
-        producto.imagen!,
-        width: 110,
-        height: 110,
-        fit: BoxFit.cover,
-      );
-    }
+    producto.imagen!.isNotEmpty) {
+  return Image.network(
+    "http://192.168.1.26:3000${producto.imagen!}",
+    width: 110,
+    height: 110,
+    fit: BoxFit.cover,
+    errorBuilder: (
+      context,
+      error,
+      stackTrace,
+    ) {
+      return imagenVacia();
+    },
+  );
+}
 
     return imagenVacia();
   }

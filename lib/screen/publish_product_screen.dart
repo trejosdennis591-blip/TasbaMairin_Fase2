@@ -5,51 +5,64 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter_application_1/services/product_service.dart';
 
-class PublishProductScreen extends StatefulWidget {
-  const PublishProductScreen({super.key});
+class PublishProductScreen
+    extends StatefulWidget {
+  const PublishProductScreen({
+    super.key,
+  });
 
   @override
-  State<PublishProductScreen> createState() =>
-      _PublishProductScreenState();
+  State<PublishProductScreen>
+      createState() =>
+          _PublishProductScreenState();
 }
 
 class _PublishProductScreenState
     extends State<PublishProductScreen> {
+
   // ==========================================================
   // IMAGEN
   // ==========================================================
 
   File? imagenSeleccionada;
 
-  final ImagePicker picker = ImagePicker();
+  final ImagePicker picker =
+      ImagePicker();
 
   // ==========================================================
   // CONTROLLERS
   // ==========================================================
 
-  final TextEditingController nombreController =
+  final TextEditingController
+      nombreController =
       TextEditingController();
 
-  final TextEditingController descripcionController =
+  final TextEditingController
+      descripcionController =
       TextEditingController();
 
-  final TextEditingController cantidadController =
+  final TextEditingController
+      cantidadController =
       TextEditingController();
 
-  final TextEditingController unidadController =
+  final TextEditingController
+      unidadController =
       TextEditingController();
 
-  final TextEditingController truequeController =
+  final TextEditingController
+      truequeController =
       TextEditingController();
 
-  final TextEditingController ubicacionController =
+  final TextEditingController
+      ubicacionController =
       TextEditingController();
 
   // ==========================================================
   // CATEGORÍA
   // ==========================================================
 
-  String categoriaSeleccionada = "Agrícola";
+  String categoriaSeleccionada =
+      "Agrícola";
 
   final List<String> categorias = [
     "Agrícola",
@@ -69,22 +82,27 @@ class _PublishProductScreenState
   // SELECCIONAR IMAGEN
   // ==========================================================
 
-  Future<void> seleccionarImagen() async {
+  Future<void>
+      seleccionarImagen() async {
     if (publicando) {
       return;
     }
 
     try {
-      final XFile? imagen = await picker.pickImage(
-        source: ImageSource.gallery,
+      final XFile? imagen =
+          await picker.pickImage(
+        source:
+            ImageSource.gallery,
         imageQuality: 60,
         maxWidth: 800,
         maxHeight: 800,
       );
 
-      if (imagen != null && mounted) {
+      if (imagen != null &&
+          mounted) {
         setState(() {
-          imagenSeleccionada = File(imagen.path);
+          imagenSeleccionada =
+              File(imagen.path);
         });
       }
     } catch (e) {
@@ -96,7 +114,9 @@ class _PublishProductScreenState
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
         const SnackBar(
           content: Text(
             "No se pudo seleccionar la imagen.",
@@ -110,130 +130,181 @@ class _PublishProductScreenState
   // PUBLICAR PRODUCTO
   // ==========================================================
 
-Future<void> publicarProducto() async {
-  if (publicando) {
-    return;
-  }
+  Future<void>
+      publicarProducto() async {
 
-  final String nombre = nombreController.text.trim();
-  final String descripcion = descripcionController.text.trim();
-  final String cantidad = cantidadController.text.trim();
-  final String unidad = unidadController.text.trim();
-  final String trueque = truequeController.text.trim();
-  final String ubicacion = ubicacionController.text.trim();
+    if (publicando) {
+      return;
+    }
 
-  // ========================================================
-  // VALIDAR CAMPOS
-  // ========================================================
+    final String nombre =
+        nombreController.text.trim();
 
-  if (nombre.isEmpty ||
-      descripcion.isEmpty ||
-      cantidad.isEmpty ||
-      unidad.isEmpty ||
-      trueque.isEmpty ||
-      ubicacion.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Complete todos los campos.",
+    final String descripcion =
+        descripcionController.text.trim();
+
+    final String cantidad =
+        cantidadController.text.trim();
+
+    final String unidad =
+        unidadController.text.trim();
+
+    final String trueque =
+        truequeController.text.trim();
+
+    final String ubicacion =
+        ubicacionController.text.trim();
+
+    // ========================================================
+    // VALIDAR CAMPOS
+    // ========================================================
+
+    if (nombre.isEmpty ||
+        descripcion.isEmpty ||
+        cantidad.isEmpty ||
+        unidad.isEmpty ||
+        trueque.isEmpty ||
+        ubicacion.isEmpty) {
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Complete todos los campos.",
+          ),
         ),
-      ),
-    );
+      );
 
-    return;
-  }
+      return;
+    }
 
-  setState(() {
-    publicando = true;
-  });
+    setState(() {
+      publicando = true;
+    });
 
-  try {
-    // ======================================================
-    // MAPEAR CATEGORÍA DE FLUTTER A ID DE MYSQL
-    // ======================================================
+    try {
 
-    final Map<String, int> categoriasIds = {
-      'Agrícola': 1,
-      'Artesanías': 2,
-      'Plantas': 3,
-      'Alimentos': 4,
-      'Ganadería': 5,
-    };
+      // ======================================================
+      // MAPEAR CATEGORÍA A ID DE MYSQL
+      // ======================================================
 
-    final int? categoriaId =
-        categoriasIds[categoriaSeleccionada];
+      final Map<String, int>
+          categoriasIds = {
+        'Agrícola': 1,
+        'Artesanías': 2,
+        'Plantas': 3,
+        'Alimentos': 4,
+        'Ganadería': 5,
+      };
 
-    if (categoriaId == null) {
-      throw Exception(
-        'La categoría seleccionada no es válida.',
+      final int? categoriaId =
+          categoriasIds[
+              categoriaSeleccionada];
+
+      if (categoriaId == null) {
+        throw Exception(
+          'La categoría seleccionada no es válida.',
+        );
+      }
+
+      // ======================================================
+      // CREAR PRODUCTO
+      // ======================================================
+
+      await ProductService
+          .crearProducto(
+        categoriaId:
+            categoriaId,
+
+        nombre:
+            nombre,
+
+        descripcion:
+            descripcion,
+
+        cantidad:
+            cantidad,
+
+        unidadMedida:
+            unidad,
+
+        aceptaTrueque:
+            trueque,
+
+        ubicacion:
+            ubicacion,
+
+        imagenes:
+            imagenSeleccionada != null
+                ? [
+                    imagenSeleccionada!
+                  ]
+                : [],
+      );
+
+      // ======================================================
+      // ÉXITO
+      // ======================================================
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        publicando = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        const SnackBar(
+          backgroundColor:
+              Colors.green,
+          content: Text(
+            "Producto publicado correctamente.",
+          ),
+          duration:
+              Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.pop(
+        context,
+        true,
+      );
+
+    } catch (e) {
+
+      debugPrint(
+        "ERROR PUBLICANDO PRODUCTO: $e",
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        publicando = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(
+        SnackBar(
+          backgroundColor:
+              Colors.red,
+          content: Text(
+            "No se pudo publicar el producto: $e",
+          ),
+          duration:
+              const Duration(
+            seconds: 4,
+          ),
+        ),
       );
     }
-
-    // ======================================================
-    // CREAR PRODUCTO EN EL BACKEND
-    // ======================================================
-
-    await ProductService.crearProducto(
-      categoriaId: categoriaId,
-      nombre: nombre,
-      descripcion: descripcion,
-      cantidad: cantidad,
-      unidadMedida: unidad,
-      aceptaTrueque: trueque,
-      ubicacion: ubicacion,
-      imagenes: [],
-    );
-
-    // ======================================================
-    // ÉXITO
-    // ======================================================
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      publicando = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Colors.green,
-        content: Text(
-          "Producto publicado correctamente.",
-        ),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    Navigator.pop(
-      context,
-      true,
-    );
-  } catch (e) {
-    debugPrint(
-      "ERROR PUBLICANDO PRODUCTO: $e",
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      publicando = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.red,
-        content: Text(
-          "No se pudo publicar el producto: $e",
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
-}
 
   // ==========================================================
   // DISPOSE
@@ -256,16 +327,21 @@ Future<void> publicarProducto() async {
   // ==========================================================
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor:
+          const Color(0xFFFFF4B8),
 
       // ======================================================
       // APP BAR
       // ======================================================
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor:
+            const Color(0xFF016630),
+
         centerTitle: true,
 
         title: const Text(
@@ -275,7 +351,8 @@ Future<void> publicarProducto() async {
           ),
         ),
 
-        iconTheme: const IconThemeData(
+        iconTheme:
+            const IconThemeData(
           color: Colors.white,
         ),
       ),
@@ -285,13 +362,15 @@ Future<void> publicarProducto() async {
       // ======================================================
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding:
+            const EdgeInsets.all(16),
 
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
+
             // ==================================================
             // IMAGEN
             // ==================================================
@@ -303,28 +382,38 @@ Future<void> publicarProducto() async {
 
               child: Container(
                 height: 180,
-                width: double.infinity,
 
-                decoration: BoxDecoration(
-                  color: Colors.white,
+                width:
+                    double.infinity,
+
+                decoration:
+                    BoxDecoration(
+                  color:
+                      Colors.white,
 
                   borderRadius:
-                      BorderRadius.circular(20),
+                      BorderRadius.circular(
+                    20,
+                  ),
                 ),
 
                 child:
-                    imagenSeleccionada == null
+                    imagenSeleccionada ==
+                            null
                         ? const Column(
                             mainAxisAlignment:
                                 MainAxisAlignment
                                     .center,
 
                             children: [
+
                               Icon(
                                 Icons.add_a_photo,
                                 size: 60,
                                 color:
-                                    Color(0xFF016630),
+                                    Color(
+                                  0xFF016630,
+                                ),
                               ),
 
                               SizedBox(
@@ -333,29 +422,37 @@ Future<void> publicarProducto() async {
 
                               Text(
                                 "Agregar imagen",
-                                style: TextStyle(
-                                  fontSize: 18,
+                                style:
+                                    TextStyle(
+                                  fontSize:
+                                      18,
                                 ),
                               ),
                             ],
                           )
                         : ClipRRect(
                             borderRadius:
-                                BorderRadius.circular(
+                                BorderRadius
+                                    .circular(
                               20,
                             ),
 
-                            child: Image.file(
+                            child:
+                                Image.file(
                               imagenSeleccionada!,
                               fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
+                              width:
+                                  double.infinity,
+                              height:
+                                  double.infinity,
                             ),
                           ),
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(
+              height: 25,
+            ),
 
             // ==================================================
             // NOMBRE
@@ -364,28 +461,41 @@ Future<void> publicarProducto() async {
             const Text(
               "Nombre del producto",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
-              controller: nombreController,
-              enabled: !publicando,
+              controller:
+                  nombreController,
 
-              decoration: InputDecoration(
+              enabled:
+                  !publicando,
+
+              decoration:
+                  InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             // ==================================================
             // CATEGORÍA
@@ -394,60 +504,86 @@ Future<void> publicarProducto() async {
             const Text(
               "Categoría",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             Container(
               padding:
-                  const EdgeInsets.symmetric(
+                  const EdgeInsets
+                      .symmetric(
                 horizontal: 15,
               ),
 
-              decoration: BoxDecoration(
-                color: Colors.white,
+              decoration:
+                  BoxDecoration(
+                color:
+                    Colors.white,
 
                 borderRadius:
-                    BorderRadius.circular(15),
+                    BorderRadius.circular(
+                  15,
+                ),
               ),
 
-              child: DropdownButton<String>(
-                isExpanded: true,
+              child:
+                  DropdownButton<String>(
+                isExpanded:
+                    true,
 
-                value: categoriaSeleccionada,
+                value:
+                    categoriaSeleccionada,
 
-                underline: const SizedBox(),
+                underline:
+                    const SizedBox(),
 
-                items: categorias.map(
-                  (String categoria) {
-                    return DropdownMenuItem<String>(
-                      value: categoria,
+                items: categorias
+                    .map(
+                      (
+                        String categoria,
+                      ) {
+                        return DropdownMenuItem<
+                            String>(
+                          value:
+                              categoria,
 
-                      child: Text(
-                        categoria,
-                      ),
-                    );
-                  },
-                ).toList(),
-
-                onChanged: publicando
-                    ? null
-                    : (String? valor) {
-                        if (valor == null) {
-                          return;
-                        }
-
-                        setState(() {
-                          categoriaSeleccionada =
-                              valor;
-                        });
+                          child:
+                              Text(
+                            categoria,
+                          ),
+                        );
                       },
+                    )
+                    .toList(),
+
+                onChanged:
+                    publicando
+                        ? null
+                        : (
+                            String? valor,
+                          ) {
+
+                            if (valor ==
+                                null) {
+                              return;
+                            }
+
+                            setState(() {
+                              categoriaSeleccionada =
+                                  valor;
+                            });
+                          },
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             // ==================================================
             // DESCRIPCIÓN
@@ -456,32 +592,43 @@ Future<void> publicarProducto() async {
             const Text(
               "Descripción",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
               controller:
                   descripcionController,
 
-              enabled: !publicando,
+              enabled:
+                  !publicando,
 
               maxLines: 4,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             // ==================================================
             // CANTIDAD
@@ -490,32 +637,44 @@ Future<void> publicarProducto() async {
             const Text(
               "Cantidad",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
-              controller: cantidadController,
+              controller:
+                  cantidadController,
 
-              enabled: !publicando,
+              enabled:
+                  !publicando,
 
               keyboardType:
                   TextInputType.number,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             // ==================================================
             // UNIDAD
@@ -524,29 +683,41 @@ Future<void> publicarProducto() async {
             const Text(
               "Unidad de medida",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
-              controller: unidadController,
+              controller:
+                  unidadController,
 
-              enabled: !publicando,
+              enabled:
+                  !publicando,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(
+              height: 30,
+            ),
 
             // ==================================================
             // TRUEQUE
@@ -555,34 +726,47 @@ Future<void> publicarProducto() async {
             const Text(
               "¿Qué deseas recibir en el trueque?",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
-              controller: truequeController,
+              controller:
+                  truequeController,
 
-              enabled: !publicando,
+              enabled:
+                  !publicando,
 
               maxLines: 2,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 hintText:
                     "Ej. Maíz, frijoles, artesanías...",
 
                 filled: true,
-                fillColor: Colors.white,
 
-                border: OutlineInputBorder(
+                fillColor:
+                    Colors.white,
+
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
 
             // ==================================================
             // UBICACIÓN
@@ -591,89 +775,121 @@ Future<void> publicarProducto() async {
             const Text(
               "Ubicación",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(
+              height: 8,
+            ),
 
             TextField(
               controller:
                   ubicacionController,
 
-              enabled: !publicando,
+              enabled:
+                  !publicando,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 hintText:
                     "Ej. Bilwi, Puerto Cabezas",
 
                 filled: true,
-                fillColor: Colors.white,
 
-                border: OutlineInputBorder(
+                fillColor:
+                    Colors.white,
+
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
 
-                suffixIcon: const Icon(
+                suffixIcon:
+                    const Icon(
                   Icons.location_on,
                 ),
               ),
             ),
 
-            const SizedBox(height: 35),
+            const SizedBox(
+              height: 35,
+            ),
 
             // ==================================================
             // BOTÓN PUBLICAR
             // ==================================================
 
             SizedBox(
-              width: double.infinity,
+              width:
+                  double.infinity,
+
               height: 55,
 
-              child: ElevatedButton(
+              child:
+                  ElevatedButton(
                 style:
-                    ElevatedButton.styleFrom(
+                    ElevatedButton
+                        .styleFrom(
                   backgroundColor:
-                      const Color(0xFF016630),
+                      const Color(
+                    0xFF016630,
+                  ),
 
                   disabledBackgroundColor:
-                      const Color(0xFF7A9E8A),
+                      const Color(
+                    0xFF7A9E8A,
+                  ),
 
                   shape:
                       RoundedRectangleBorder(
                     borderRadius:
-                        BorderRadius.circular(15),
+                        BorderRadius.circular(
+                      15,
+                    ),
                   ),
                 ),
 
-                onPressed: publicando
-                    ? null
-                    : publicarProducto,
+                onPressed:
+                    publicando
+                        ? null
+                        : publicarProducto,
 
-                child: publicando
-                    ? const SizedBox(
-                        width: 25,
-                        height: 25,
+                child:
+                    publicando
+                        ? const SizedBox(
+                            width: 25,
+                            height: 25,
 
-                        child:
-                            CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : const Text(
-                        "Publicar Producto",
+                            child:
+                                CircularProgressIndicator(
+                              color:
+                                  Colors.white,
+                              strokeWidth:
+                                  2.5,
+                            ),
+                          )
+                        : const Text(
+                            "Publicar Producto",
 
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                        ),
-                      ),
+                            style:
+                                TextStyle(
+                              fontSize:
+                                  18,
+                              color:
+                                  Colors.white,
+                            ),
+                          ),
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(
+              height: 30,
+            ),
           ],
         ),
       ),

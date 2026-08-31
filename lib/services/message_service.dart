@@ -1,30 +1,190 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter_application_1/models/message.dart';
 
 class MessageService {
-  // ==========================================================
-  // MENSAJES
-  // ==========================================================
-
-  static final List<Message> _mensajes = [];
+  static const String baseUrl =
+      'http://192.168.1.26:3000/api';
 
   // ==========================================================
-  // OBTENER MENSAJES
+  // OBTENER TOKEN
   // ==========================================================
 
-  static List<Message> obtenerMensajes({
-    required String usuarioId,
+  static Future<String> _obtenerToken() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final token =
+        prefs.getString('token');
+
+    if (token == null || token.isEmpty) {
+      throw Exception(
+        'No hay una sesión activa',
+      );
+    }
+
+    return token;
+  }
+
+  // ==========================================================
+  // OBTENER USUARIO ACTUAL
+  // ==========================================================
+
+  static Future<int> _obtenerUsuarioId() async {
+    final prefs =
+        await SharedPreferences.getInstance();
+
+    final usuarioId =
+        prefs.getString('usuario_id');
+
+    if (usuarioId == null ||
+        usuarioId.isEmpty) {
+      throw Exception(
+        'No se encontró el usuario logueado',
+      );
+    }
+
+    final id =
+        int.tryParse(usuarioId);
+
+    if (id == null) {
+      throw Exception(
+        'El ID del usuario no es válido',
+      );
+    }
+
+    return id;
+  }
+
+  // ==========================================================
+  // OBTENER CONVERSACIÓN
+  // ==========================================================
+
+  static Future<List<Message>>
+      obtenerMensajes({
     required String otroUsuarioId,
-  }) {
-    return _mensajes.where((mensaje) {
-      final mismaConversacion =
-          mensaje.remitenteId == usuarioId &&
-          mensaje.destinatarioId == otroUsuarioId;
+    required String productoId,
+  }) async {
+    final token =
+        await _obtenerToken();
 
-      final conversacionInversa =
-          mensaje.remitenteId == otroUsuarioId &&
-          mensaje.destinatarioId == usuarioId;
+    print(
+      '====================================',
+    );
 
-      return mismaConversacion || conversacionInversa;
+    print(
+      'USUARIO DESTINO: $otroUsuarioId',
+    );
+
+    print(
+      'PRODUCTO: $productoId',
+    );
+
+    print(
+      'URL: '
+      '$baseUrl/mensajes/'
+      '$otroUsuarioId/'
+      '$productoId',
+    );
+
+    print(
+      '====================================',
+    );
+
+    final response =
+        await http.get(
+      Uri.parse(
+        '$baseUrl/mensajes/'
+        '$otroUsuarioId/'
+        '$productoId',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $token',
+      },
+    );
+
+    print(
+      'MENSAJES STATUS: '
+      '${response.statusCode}',
+    );
+
+    print(
+      'MENSAJES BODY: '
+      '${response.body}',
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        data['mensaje'] ??
+            'No se pudieron obtener los mensajes',
+      );
+    }
+
+    final List lista =
+        data['mensajes'] ?? [];
+
+    final usuarioActual =
+        await _obtenerUsuarioId();
+
+    // ========================================================
+    // CONVERTIR MENSAJES
+    // ========================================================
+
+    return lista.map<Message>((m) {
+      final remitente =
+          int.parse(
+        m['RemitenteID'].toString(),
+      );
+
+      return Message(
+        mensajeId:
+            m['MensajeID'] != null
+                ? int.parse(
+                    m['MensajeID'].toString(),
+                  )
+                : null,
+
+        remitenteId:
+            remitente.toString(),
+
+        destinatarioId:
+            m['DestinatarioID']
+                .toString(),
+
+        mensaje:
+            m['Contenido']
+                    ?.toString() ??
+                '',
+
+        fechaEnvio:
+            DateTime.parse(
+          m['FechaEnvio']
+              .toString(),
+        ),
+
+        leido:
+            m['Leido'].toString() == '1' ||
+            m['Leido'] == true,
+
+        mio:
+            remitente ==
+                usuarioActual,
+
+        // ====================================================
+        // FOTO DE PERFIL
+        // ====================================================
+
+        imagenPerfil:
+            m['FotoPerfil']
+                ?.toString(),
+      );
     }).toList();
   }
 
@@ -32,91 +192,170 @@ class MessageService {
   // ENVIAR MENSAJE
   // ==========================================================
 
-  static void enviarMensaje({
-    required String remitenteId,
+  static Future<void> enviarMensaje({
     required String destinatarioId,
+    required String productoId,
     required String mensaje,
-  }) {
+  }) async {
     if (mensaje.trim().isEmpty) {
       return;
     }
 
-    _mensajes.add(
-      Message(
-        remitenteId: remitenteId,
-        destinatarioId: destinatarioId,
-        mensaje: mensaje.trim(),
-        fechaEnvio: DateTime.now(),
-        leido: false,
-        mio: true,
+    final token =
+        await _obtenerToken();
+
+    final response =
+        await http.post(
+      Uri.parse(
+        '$baseUrl/mensajes',
       ),
+      headers: {
+        'Content-Type':
+            'application/json',
+
+        'Authorization':
+            'Bearer $token',
+      },
+      body: jsonEncode({
+        'destinatarioId':
+            int.parse(
+          destinatarioId,
+        ),
+
+        'productoId':
+            int.parse(
+          productoId,
+        ),
+
+        'contenido':
+            mensaje.trim(),
+      }),
     );
-  }
 
-  // ==========================================================
-  // MARCAR MENSAJE COMO LEÍDO
-  // ==========================================================
-
-  static void marcarComoLeido(int mensajeId) {
-    final indice = _mensajes.indexWhere(
-      (mensaje) => mensaje.mensajeId == mensajeId,
+    print(
+      'ENVIAR MENSAJE STATUS: '
+      '${response.statusCode}',
     );
 
-    if (indice == -1) {
-      return;
+    print(
+      'ENVIAR MENSAJE BODY: '
+      '${response.body}',
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode != 201) {
+      throw Exception(
+        data['mensaje'] ??
+            'No se pudo enviar el mensaje',
+      );
     }
-
-    final mensaje = _mensajes[indice];
-
-    _mensajes[indice] = Message(
-      mensajeId: mensaje.mensajeId,
-      remitenteId: mensaje.remitenteId,
-      destinatarioId: mensaje.destinatarioId,
-      mensaje: mensaje.mensaje,
-      fechaEnvio: mensaje.fechaEnvio,
-      leido: true,
-      mio: mensaje.mio,
-    );
-  }
-
-  // ==========================================================
-  // LIMPIAR MENSAJES
-  // ==========================================================
-
-  static void limpiarMensajes() {
-    _mensajes.clear();
   }
 
   // ==========================================================
   // OBTENER CONVERSACIONES
   // ==========================================================
 
-  static List<Map<String, String>> obtenerConversaciones({
-    required String usuarioId,
-  }) {
-    final Map<String, Map<String, String>>
-        conversaciones = {};
+  static Future<
+      List<Map<String, String>>>
+      obtenerConversaciones() async {
+    final token =
+        await _obtenerToken();
 
-    for (final mensaje in _mensajes) {
-      String otroUsuarioId;
+    final response =
+        await http.get(
+      Uri.parse(
+        '$baseUrl/mensajes/conversaciones',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $token',
+      },
+    );
 
-      if (mensaje.remitenteId == usuarioId) {
-        otroUsuarioId = mensaje.destinatarioId;
-      } else if (mensaje.destinatarioId == usuarioId) {
-        otroUsuarioId = mensaje.remitenteId;
-      } else {
-        continue;
-      }
+    print(
+      'CONVERSACIONES STATUS: '
+      '${response.statusCode}',
+    );
 
-      conversaciones[otroUsuarioId] = {
-        "usuarioId": otroUsuarioId,
-        "ultimoMensaje": mensaje.mensaje,
-        "hora":
-            "${mensaje.fechaEnvio.hour.toString().padLeft(2, '0')}:"
-            "${mensaje.fechaEnvio.minute.toString().padLeft(2, '0')}",
-      };
+    print(
+      'CONVERSACIONES BODY: '
+      '${response.body}',
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        data['mensaje'] ??
+            'No se pudieron obtener las conversaciones',
+      );
     }
 
-    return conversaciones.values.toList();
+    final List lista =
+        data['conversaciones'] ?? [];
+
+    return lista
+        .map<Map<String, String>>(
+      (item) {
+        return {
+          'usuarioId':
+              item['usuarioId']
+                      ?.toString() ??
+                  '',
+
+          'nombre':
+              item['nombre']
+                      ?.toString() ??
+                  'Usuario',
+
+          'productoId':
+              item['productoId']
+                      ?.toString() ??
+                  '',
+
+          'ultimoMensaje':
+              item['ultimoMensaje']
+                      ?.toString() ??
+                  '',
+
+          'hora':
+              item['hora']
+                      ?.toString() ??
+                  '',
+
+          // ==================================================
+          // FOTO DE PERFIL
+          // ==================================================
+
+          'imagenPerfil':
+              item['imagenPerfil']
+                      ?.toString() ??
+                  '',
+        };
+      },
+    ).toList();
+  }
+
+  // ==========================================================
+  // MARCAR COMO LEÍDO
+  // ==========================================================
+
+  static Future<void> marcarComoLeido({
+    required String otroUsuarioId,
+    required String productoId,
+  }) async {
+    // El backend marca los mensajes
+    // como leídos al abrir la conversación.
+  }
+
+  // ==========================================================
+  // LIMPIAR MENSAJES
+  // ==========================================================
+
+  static Future<void> limpiarMensajes() async {
+    // Los mensajes están almacenados en MySQL.
   }
 }

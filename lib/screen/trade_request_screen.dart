@@ -23,11 +23,24 @@ class _TradeRequestScreenState
 
   bool enviando = false;
 
+  // ==========================================================
+  // ENVIAR SOLICITUD
+  // ==========================================================
+
   Future<void> enviarSolicitud() async {
-    final String oferta =
+    final oferta =
         ofertaController.text.trim();
 
     if (oferta.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            'Escribe qué ofreces a cambio.',
+          ),
+        ),
+      );
+
       return;
     }
 
@@ -35,33 +48,52 @@ class _TradeRequestScreenState
       enviando = true;
     });
 
-     print(
-  'USUARIO DUEÑO DEL PRODUCTO: ${widget.producto.usuarioId}',
-);
-
-await TradeRequestService.crearSolicitud(
+    try {
+      await TradeRequestService.crearSolicitud(
   productoId: widget.producto.id,
-  nombreProducto: widget.producto.nombre,
-  solicitanteId: widget.producto.usuarioId,
-  nombreSolicitante: "Usuario",
+  usuarioOfreceId:
+      int.tryParse(widget.producto.usuarioId) ?? 0,
   mensaje: oferta,
 );
 
-    if (!mounted) {
-      return;
-    }
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Colors.green,
-        content: Text(
-          "Solicitud enviada correctamente.",
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            'Solicitud enviada correctamente.',
+          ),
         ),
-      ),
-    );
+      );
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            e.toString().replaceFirst(
+              'Exception: ',
+              '',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          enviando = false;
+        });
+      }
+    }
   }
+
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
 
   @override
   void dispose() {
@@ -69,21 +101,25 @@ await TradeRequestService.crearSolicitud(
     super.dispose();
   }
 
+  // ==========================================================
+  // UI
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor:
+          const Color(0xFFFFF4B8),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
-
+        backgroundColor:
+            const Color(0xFF016630),
         title: const Text(
-          "Solicitar Trueque",
+          'Solicitar Trueque',
           style: TextStyle(
             color: Colors.white,
           ),
         ),
-
         iconTheme: const IconThemeData(
           color: Colors.white,
         ),
@@ -91,11 +127,9 @@ await TradeRequestService.crearSolicitud(
 
       body: Padding(
         padding: const EdgeInsets.all(20),
-
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
-
           children: [
             Text(
               widget.producto.nombre,
@@ -105,12 +139,22 @@ await TradeRequestService.crearSolicitud(
               ),
             ),
 
+            const SizedBox(height: 8),
+
+            const Text(
+              'Quieres solicitar este producto.',
+              style: TextStyle(
+                fontSize: 15,
+              ),
+            ),
+
             const SizedBox(height: 25),
 
             const Text(
-              "¿Qué ofreces a cambio?",
+              '¿Qué ofreces a cambio?',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
 
@@ -119,14 +163,26 @@ await TradeRequestService.crearSolicitud(
             TextField(
               controller: ofertaController,
               maxLines: 4,
-
+              enabled: !enviando,
+              textInputAction:
+                  TextInputAction.newline,
               decoration: InputDecoration(
+                hintText:
+                    'Describe lo que ofreces a cambio...',
                 filled: true,
                 fillColor: Colors.white,
-
                 border: OutlineInputBorder(
                   borderRadius:
                       BorderRadius.circular(15),
+                ),
+                focusedBorder:
+                    OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF016630),
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -136,25 +192,41 @@ await TradeRequestService.crearSolicitud(
             SizedBox(
               width: double.infinity,
               height: 55,
-
               child: ElevatedButton(
-                style:
-                    ElevatedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   backgroundColor:
                       const Color(0xFF016630),
-                ),
-
-                onPressed: enviando
-                    ? null
-                    : enviarSolicitud,
-
-                child: const Text(
-                  "Enviar Solicitud",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  disabledBackgroundColor:
+                      Colors.grey,
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(15),
                   ),
                 ),
+                onPressed:
+                    enviando
+                        ? null
+                        : enviarSolicitud,
+                child: enviando
+                    ? const SizedBox(
+                        width: 25,
+                        height: 25,
+                        child:
+                            CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      )
+                    : const Text(
+                        'Enviar Solicitud',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight:
+                              FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],

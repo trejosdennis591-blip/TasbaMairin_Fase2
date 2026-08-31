@@ -43,12 +43,11 @@ class _ReportProductScreenState
     });
 
     await ReportService.crearReporte(
-      productoId: widget.producto.id,
-      usuarioId: "usuario_local",
-      motivo: motivoSeleccionado,
-      descripcion:
-          descripcionController.text.trim(),
-    );
+  productoId: widget.producto.id,
+  motivo: motivoSeleccionado,
+  descripcion:
+      descripcionController.text.trim(),
+);
 
     if (!mounted) {
       return;

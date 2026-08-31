@@ -10,7 +10,7 @@ class FavoriteService {
   FavoriteService._();
 
  static const String baseUrl =
-    'http://192.168.1.25:3000/api';
+    'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // TOKEN
