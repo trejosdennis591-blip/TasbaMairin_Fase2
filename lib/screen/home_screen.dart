@@ -13,6 +13,7 @@ import 'package:flutter_application_1/screen/category_products_screen.dart';
 
 import 'package:flutter_application_1/widgets/category_card.dart';
 import 'package:flutter_application_1/widgets/product_card.dart';
+import '../widgets/ad_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -31,6 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   String tipoUsuario = '';
+  String nombreUsuarioActual = "Usuario";
 
   // ============================================================
   // INIT
@@ -53,6 +55,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await SharedPreferences.getInstance();
 
     if (!mounted) return;
+
+    final tipo =
+    prefs.getString('tipo_usuario');
 
     setState(() {
       tipoUsuario =
@@ -243,152 +248,125 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 18),
 
               // ==================================================
-              // BANNER DE TRUEQUE / ANUNCIO
+              // BANNER HUERTO VERDE / ANUNCIO
               // ==================================================
 
               Container(
                 width: double.infinity,
                 height: 175,
-
                 decoration: BoxDecoration(
                   color: verde,
-
-                  borderRadius:
-                      BorderRadius.circular(24),
-
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black
-                          .withOpacity(0.12),
+                      color: Colors.black.withOpacity(0.12),
                       blurRadius: 12,
-                      offset:
-                          const Offset(0, 5),
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
-
                 child: Stack(
                   children: [
-
-                    // ==================================================
-                    // CÍRCULO DECORATIVO
-                    // ==================================================
-
                     Positioned(
                       right: -35,
                       top: -35,
-
                       child: Container(
                         width: 130,
                         height: 130,
-
-                        decoration:
-                            BoxDecoration(
-                          color: Colors.white
-                              .withOpacity(0.08),
-
-                          shape:
-                              BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ),
-
-                    // ==================================================
-                    // CÍRCULO DECORATIVO
-                    // ==================================================
 
                     Positioned(
                       right: 25,
                       bottom: -55,
-
                       child: Container(
                         width: 120,
                         height: 120,
-
-                        decoration:
-                            BoxDecoration(
-                          color: Colors.white
-                              .withOpacity(0.06),
-
-                          shape:
-                              BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ),
 
-                    // ==================================================
-                    // CONTENIDO DEL ANUNCIO
-                    // ==================================================
-
                     Padding(
-                      padding:
-                          const EdgeInsets.all(22),
-
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-
-                        children: const [
-
-                          Row(
-                            children: [
-
-                              Icon(
-                                Icons.swap_horiz_rounded,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-
-                              SizedBox(width: 10),
-
-                              Text(
-                                "Haz trueque",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 25,
-                                  fontWeight:
-                                      FontWeight.bold,
+                      padding: const EdgeInsets.all(22),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                              children: const [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.eco_rounded,
+                                      color: Colors.white,
+                                      size: 29,
+                                    ),
+                                    SizedBox(width: 9),
+                                    Text(
+                                      "Huerto Verde",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: 8),
-
-                          Text(
-                            "Intercambia productos con tu comunidad",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
+                                SizedBox(height: 8),
+                                Text(
+                                  "Productos frescos de nuestra comunidad",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                SizedBox(height: 11),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.swap_horiz_rounded,
+                                      color: Colors.white,
+                                      size: 19,
+                                    ),
+                                    SizedBox(width: 7),
+                                    Text(
+                                      "Intercambia y comparte",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
 
-                          SizedBox(height: 12),
+                          const SizedBox(width: 8),
 
-                          Row(
-                            children: [
-
-                              Icon(
-                                Icons.campaign_rounded,
-                                color: Colors.white,
-                                size: 19,
-                              ),
-
-                              SizedBox(width: 7),
-
-                              Text(
-                                "Anuncios de la comunidad",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight:
-                                      FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.14),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.local_florist_rounded,
+                              color: Colors.white,
+                              size: 38,
+                            ),
                           ),
                         ],
                       ),
@@ -472,6 +450,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               const SizedBox(height: 28),
+
+              const AdBanner(),
 
               // ==================================================
               // CATEGORÍAS
@@ -857,89 +837,115 @@ class _HomeScreenState extends State<HomeScreen> {
             BottomNavigationBarType.fixed,
 
         onTap: (index) {
-          switch (index) {
 
-            // ==================================================
-            // INICIO
-            // ==================================================
+  if (tipoUsuario.toLowerCase() == "proveedor") {
 
-            case 0:
-              break;
+    switch (index) {
 
-            // ==================================================
-            // FAVORITOS
-            // ==================================================
+      case 0:
+        break;
 
-            case 1:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const FavoritesScreen(),
-                ),
-              );
-              break;
-
-            // ==================================================
-            // PERFIL
-            // ==================================================
-
-            case 2:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const ProfileScreen(),
-                ),
-              );
-              break;
-
-            // ==================================================
-            // MENSAJES
-            // ==================================================
-
-            case 3:
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      MessagesScreen(),
-                ),
-              );
-              break;
-          }
-        },
-
-        items: const [
-
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.home_rounded,
-            ),
-            label: "Inicio",
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                const ProfileScreen(),
           ),
+        );
+        break;
 
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.favorite_border_rounded,
-            ),
-            label: "Favoritos",
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                MessagesScreen(),
           ),
+        );
+        break;
+    }
 
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.person_outline_rounded,
-            ),
-            label: "Perfil",
-          ),
+  } else {
 
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.chat_bubble_outline_rounded,
-            ),
-            label: "Mensajes",
+    switch (index) {
+
+      case 0:
+        break;
+
+      case 1:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                const FavoritesScreen(),
           ),
-        ],
+        );
+        break;
+
+      case 2:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                const ProfileScreen(),
+          ),
+        );
+        break;
+
+      case 3:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                MessagesScreen(),
+          ),
+        );
+        break;
+    }
+  }
+},
+
+        items: tipoUsuario.toLowerCase() == "proveedor"
+    ? const [
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_rounded),
+          label: "Inicio",
+        ),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline_rounded),
+          label: "Perfil",
+        ),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline_rounded),
+          label: "Mensajes",
+        ),
+      ]
+    : const [
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_rounded),
+          label: "Inicio",
+        ),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.favorite_border_rounded),
+          label: "Favoritos",
+        ),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_outline_rounded),
+          label: "Perfil",
+        ),
+
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline_rounded),
+          label: "Mensajes",
+        ),
+      ],
       ),
     );
   }

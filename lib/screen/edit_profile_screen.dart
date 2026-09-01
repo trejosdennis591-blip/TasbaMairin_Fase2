@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_application_1/config/api_config.dart';
 import '../services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -564,8 +564,7 @@ class _EditProfileScreenState
       } else {
 
         url =
-            'http://192.168.1.26:3000'
-            '$fotoPerfilActual';
+    '${ApiConfig.serverUrl}$fotoPerfilActual';
       }
 
       return Container(

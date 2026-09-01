@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/services/product_service.dart';
 import 'package:flutter_application_1/screen/product_detail_screen.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class MyProductsScreen extends StatefulWidget {
   const MyProductsScreen({super.key});
@@ -91,7 +92,7 @@ class _MyProductsScreenState
     if (producto.imagen != null &&
     producto.imagen!.isNotEmpty) {
   return Image.network(
-    "http://192.168.1.26:3000${producto.imagen!}",
+    "${ApiConfig.serverUrl}${producto.imagen!}",
     width: 110,
     height: 110,
     fit: BoxFit.cover,

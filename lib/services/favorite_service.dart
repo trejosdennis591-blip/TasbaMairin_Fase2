@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/services/product_service.dart';
 
 class FavoriteService {
   FavoriteService._();
-
- static const String baseUrl =
-    'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // TOKEN
@@ -48,7 +46,7 @@ class FavoriteService {
     if (producto.favorito) {
       final response = await http.delete(
         Uri.parse(
-          '$baseUrl/favoritos/${producto.id}',
+          '${ApiConfig.baseUrl}/favoritos/${producto.id}',
         ),
         headers: {
           'Authorization': 'Bearer $token',
@@ -66,7 +64,9 @@ class FavoriteService {
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/favoritos'),
+      Uri.parse(
+        '${ApiConfig.baseUrl}/favoritos',
+      ),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -95,7 +95,9 @@ class FavoriteService {
     final token = await _obtenerToken();
 
     final response = await http.get(
-      Uri.parse('$baseUrl/favoritos'),
+      Uri.parse(
+        '${ApiConfig.baseUrl}/favoritos',
+      ),
       headers: {
         'Authorization': 'Bearer $token',
       },

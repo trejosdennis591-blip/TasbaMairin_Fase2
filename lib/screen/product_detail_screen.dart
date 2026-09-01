@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/models/product.dart';
@@ -49,6 +50,7 @@ class _ProductDetailScreenState
   int? usuarioActualId;
 
   String nombreUsuarioActual = "Usuario";
+  String tipoUsuario = '';
 
   // ==========================================================
   // INICIO
@@ -76,20 +78,25 @@ class _ProductDetailScreenState
     final nombre =
         prefs.getString('nombre');
 
+    final tipo =
+    prefs.getString('tipo_usuario');
+
     if (!mounted) {
       return;
     }
 
     setState(() {
-      usuarioActualId =
-          id != null ? int.tryParse(id) : null;
+  usuarioActualId =
+      id != null ? int.tryParse(id) : null;
 
-      nombreUsuarioActual =
-          nombre != null &&
-                  nombre.trim().isNotEmpty
-              ? nombre.trim()
-              : "Usuario";
-    });
+  nombreUsuarioActual =
+      nombre != null &&
+              nombre.trim().isNotEmpty
+          ? nombre.trim()
+          : "Usuario";
+
+  tipoUsuario = tipo ?? '';
+});
   }
 
   // ==========================================================
@@ -200,7 +207,7 @@ class _ProductDetailScreenState
     // /uploads/productos/imagen.jpg
     if (url.startsWith('/')) {
       url =
-          'http://192.168.1.26:3000$url';
+          '${ApiConfig.serverUrl}$url';
     }
 
     // Si viene así:
@@ -208,7 +215,7 @@ class _ProductDetailScreenState
     if (!url.startsWith('http://') &&
         !url.startsWith('https://')) {
       url =
-          'http://192.168.1.26:3000/$url';
+          '${ApiConfig.serverUrl}$url';
     }
 
     return Image.network(
@@ -1247,354 +1254,280 @@ class _ProductDetailScreenState
             ),
 
             // ==================================================
-            // BOTONES PRINCIPALES
+// BOTONES PRINCIPALES
+// SOLO COMPRADORES
+// ==================================================
+
+if (tipoUsuario.toLowerCase() != 'proveedor')
+  Row(
+    children: [
+      Expanded(
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                const Color(0xFF016630),
+            minimumSize:
+                const Size(0, 55),
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                15,
+              ),
+            ),
+          ),
+          onPressed: contactar,
+          icon: const Icon(
+            Icons.message,
+            color: Colors.white,
+          ),
+          label: const Text(
+            "Contactar",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+            ),
+          ),
+        ),
+      ),
+
+      const SizedBox(width: 10),
+
+      Expanded(
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                const Color(0xFFD0872E),
+            minimumSize:
+                const Size(0, 55),
+            shape:
+                RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(
+                15,
+              ),
+            ),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    TradeRequestScreen(
+                  producto:
+                      widget.producto,
+                ),
+              ),
+            );
+          },
+          icon: const Icon(
+            Icons.swap_horiz,
+            color: Colors.white,
+          ),
+          label: const Text(
+            "Trueque",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ),
+
+      const SizedBox(width: 10),
+
+      IconButton(
+        iconSize: 35,
+        onPressed: () async {
+          final bool eraFavorito =
+              FavoriteService.esFavorito(
+            widget.producto,
+          );
+
+          await FavoriteService
+              .cambiarFavorito(
+            widget.producto,
+          );
+
+          if (!mounted) {
+            return;
+          }
+
+          setState(() {});
+
+          ScaffoldMessenger.of(context)
+              .showSnackBar(
+            SnackBar(
+              content: Text(
+                eraFavorito
+                    ? "Producto eliminado de favoritos"
+                    : "Producto agregado a favoritos",
+              ),
+              duration:
+                  const Duration(
+                seconds: 1,
+              ),
+            ),
+          );
+        },
+        icon: Icon(
+          FavoriteService.esFavorito(
+            widget.producto,
+          )
+              ? Icons.favorite
+              : Icons.favorite_border,
+          color: Colors.red,
+        ),
+      ),
+    ],
+  ),
+
+const SizedBox(
+  height: 15,
+),
+
             // ==================================================
+// REPORTAR USUARIO
+// SOLO PARA COMPRADORES
+// ==================================================
 
-            Row(
-              children: [
-                Expanded(
-                  child:
-                      ElevatedButton.icon(
-                    style:
-                        ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(
-                        0xFF016630,
-                      ),
-                      minimumSize:
-                          const Size(
-                        0,
-                        55,
-                      ),
-                      shape:
-                          RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius
-                                .circular(
-                          15,
-                        ),
-                      ),
-                    ),
-                    onPressed:
-                        contactar,
-                    icon:
-                        const Icon(
-                      Icons.message,
-                      color:
-                          Colors.white,
-                    ),
-                    label:
-                        const Text(
-                      "Contactar",
-                      style:
-                          TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 17,
-                      ),
-                    ),
-                  ),
-                ),
+if (tipoUsuario == 'Comprador')
+  SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.red,
+        minimumSize: const Size(
+          0,
+          55,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            15,
+          ),
+        ),
+      ),
+      onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ReportProductScreen(
+        usuarioReportadoId: int.parse(
+          widget.producto.usuarioId,
+        ),
+      ),
+    ),
+  );
+},
+      icon: const Icon(
+        Icons.report,
+        color: Colors.white,
+      ),
+      label: const Text(
+        'Reportar usuario',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 17,
+        ),
+      ),
+    ),
+  ),
 
-                const SizedBox(
-                  width: 10,
-                ),
+const SizedBox(
+  height: 15,
+),
 
-                Expanded(
-                  child:
-                      ElevatedButton.icon(
-                    style:
-                        ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(
-                        0xFFD0872E,
-                      ),
-                      minimumSize:
-                          const Size(
-                        0,
-                        55,
-                      ),
-                      shape:
-                          RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius
-                                .circular(
-                          15,
-                        ),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TradeRequestScreen(
-                            producto:
-                                widget
-                                    .producto,
-                          ),
-                        ),
-                      );
-                    },
-                    icon:
-                        const Icon(
-                      Icons.swap_horiz,
-                      color:
-                          Colors.white,
-                    ),
-                    label:
-                        const Text(
-                      "Trueque",
-                      style:
-                          TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
+            // ==================================================
+// UBICACIÓN
+// ==================================================
 
-                const SizedBox(
-                  width: 10,
-                ),
-
-                IconButton(
-                  iconSize: 35,
-                  onPressed: () async {
-                    final bool
-                        eraFavorito =
-                        FavoriteService
-                            .esFavorito(
-                      widget.producto,
-                    );
-
-                    await FavoriteService
-                        .cambiarFavorito(
-                      widget.producto,
-                    );
-
-                    if (!mounted) {
-                      return;
-                    }
-
-                    setState(() {});
-
-                    ScaffoldMessenger
-                        .of(context)
-                        .showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          eraFavorito
-                              ? "Producto eliminado de favoritos"
-                              : "Producto agregado a favoritos",
-                        ),
-                        duration:
-                            const Duration(
-                          seconds: 1,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    FavoriteService
-                            .esFavorito(
-                      widget.producto,
-                    )
-                        ? Icons.favorite
-                        : Icons
-                            .favorite_border,
-                    color: Colors.red,
+if (tipoUsuario == 'Comprador')
+  SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(
+          color: Color(0xFFD0872E),
+          width: 2,
+        ),
+        minimumSize: const Size(
+          0,
+          55,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+      onPressed: () {
+        if (widget.producto.ubicacion.trim().isEmpty) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text(
+                "Ubicación",
+              ),
+              content: const Text(
+                "Este producto fue publicado antes de que se agregara el sistema de ubicación.",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    "Aceptar",
                   ),
                 ),
               ],
             ),
+          );
 
-            const SizedBox(
-              height: 15,
+          return;
+        }
+
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text(
+              "Ubicación del producto",
             ),
-
-            // ==================================================
-            // REPORTAR
-            // ==================================================
-
-            SizedBox(
-              width: double.infinity,
-              child:
-                  ElevatedButton.icon(
-                style:
-                    ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Colors.red,
-                  minimumSize:
-                      const Size(
-                    0,
-                    55,
-                  ),
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(
-                      15,
-                    ),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ReportProductScreen(
-                        producto:
-                            widget.producto,
-                      ),
-                    ),
-                  );
-                },
-                icon:
-                    const Icon(
-                  Icons.report,
-                  color:
-                      Colors.white,
-                ),
-                label:
-                    const Text(
-                  "Reportar producto",
-                  style:
-                      TextStyle(
-                    color:
-                        Colors.white,
-                    fontSize: 17,
-                  ),
+            content: Text(
+              widget.producto.ubicacion,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Cerrar",
                 ),
               ),
-            ),
+            ],
+          ),
+        );
+      },
+      icon: const Icon(
+        Icons.location_on,
+        color: Color(0xFFD0872E),
+      ),
+      label: const Text(
+        "Ver ubicación",
+        style: TextStyle(
+          color: Color(0xFFD0872E),
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ),
 
-            const SizedBox(
-              height: 15,
-            ),
-
-            // ==================================================
-            // UBICACIÓN
-            // ==================================================
-
-            SizedBox(
-              width: double.infinity,
-              child:
-                  OutlinedButton.icon(
-                style:
-                    OutlinedButton.styleFrom(
-                  side:
-                      const BorderSide(
-                    color:
-                        Color(0xFFD0872E),
-                    width: 2,
-                  ),
-                  minimumSize:
-                      const Size(
-                    0,
-                    55,
-                  ),
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(
-                      15,
-                    ),
-                  ),
-                ),
-                onPressed: () {
-                  if (widget.producto
-                      .ubicacion
-                      .trim()
-                      .isEmpty) {
-                    showDialog(
-                      context: context,
-                      builder: (_) =>
-                          AlertDialog(
-                        title:
-                            const Text(
-                          "Ubicación",
-                        ),
-                        content:
-                            const Text(
-                          "Este producto fue publicado antes de que se agregara el sistema de ubicación.",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () =>
-                                Navigator.pop(
-                              context,
-                            ),
-                            child:
-                                const Text(
-                              "Aceptar",
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  showDialog(
-                    context: context,
-                    builder: (_) =>
-                        AlertDialog(
-                      title:
-                          const Text(
-                        "Ubicación del producto",
-                      ),
-                      content: Text(
-                        widget.producto
-                            .ubicacion,
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pop(
-                            context,
-                            ),
-                          child:
-                              const Text(
-                            "Cerrar",
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                icon:
-                    const Icon(
-                  Icons.location_on,
-                  color:
-                      Color(0xFFD0872E),
-                ),
-                label:
-                    const Text(
-                  "Ver ubicación",
-                  style:
-                      TextStyle(
-                    color:
-                        Color(0xFFD0872E),
-                    fontSize: 17,
-                    fontWeight:
-                        FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(
-              height: 30,
-            ),
+const SizedBox(
+  height: 30,
+),
 
             // ==================================================
             // FORMULARIO RESEÑA
             // ==================================================
 
-            construirFormularioResena(),
+            if (tipoUsuario.toLowerCase() != 'proveedor')
+  construirFormularioResena(),
 
             const SizedBox(
               height: 30,

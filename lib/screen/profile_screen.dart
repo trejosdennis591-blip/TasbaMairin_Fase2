@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 import 'package:flutter_application_1/screen/login_screen.dart';
 import 'package:flutter_application_1/screen/my_products_screen.dart';
@@ -33,6 +34,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String tipoUsuario = "";
 
   String? fotoPerfil;
+String? fotoCarnet;
+
 
   // ==========================================================
   // ESTADÍSTICAS
@@ -126,6 +129,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     fotoPerfil =
         prefs.getString('foto_perfil');
+
+    fotoCarnet =
+    prefs.getString('foto_carnet');
 
     cantidadProductos = cantidadProductosLocal;
     cantidadFavoritos = cantidadFavoritosLocal;
@@ -417,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   (fotoPerfil != null &&
                                           fotoPerfil!.isNotEmpty)
                                       ? NetworkImage(
-                                          "http://192.168.1.26:3000$fotoPerfil",
+                                          '${ApiConfig.serverUrl}$fotoPerfil',
                                         )
                                       : null,
 
@@ -611,6 +617,54 @@ const SizedBox(height: 28),
                               "Actualiza tus datos personales",
                           onTap: editarPerfil,
                         ),
+
+                        if (fotoCarnet != null &&
+    fotoCarnet!.isNotEmpty)
+  opcionPerfil(
+    icono: Icons.badge_outlined,
+    titulo: "Ver carnet",
+    subtitulo:
+        "Consultar documento de identificación",
+    onTap: () {
+      showDialog(
+        context: context,
+        builder: (_) => Dialog(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(
+                automaticallyImplyLeading: false,
+                backgroundColor: verde,
+                title: const Text(
+                  "Carnet",
+                  style: TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              InteractiveViewer(
+                child: Image.network(
+                  '${ApiConfig.serverUrl}$fotoCarnet',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  ),
 
                         // ============================================
                         // MIS PUBLICACIONES

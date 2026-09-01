@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class AuthService {
-  static const String baseUrl =
-      'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // OBTENER TIPO MIME
@@ -45,7 +44,7 @@ class AuthService {
     String contrasena,
   ) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
+      Uri.parse('${ApiConfig.baseUrl}/auth/login'),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -98,6 +97,7 @@ class AuthService {
     await prefs.remove('tipo_usuario');
     await prefs.remove('estado');
     await prefs.remove('foto_perfil');
+    await prefs.remove('foto_carnet');
 
     // ========================================================
     // GUARDAR SESIÓN
@@ -155,6 +155,16 @@ class AuthService {
       );
     }
 
+    if (usuario['FotoCarnet'] != null &&
+    usuario['FotoCarnet']
+        .toString()
+        .isNotEmpty) {
+  await prefs.setString(
+    'foto_carnet',
+    usuario['FotoCarnet'].toString(),
+  );
+}
+
     print('================================');
     print('LOGIN CORRECTO');
     print(
@@ -200,7 +210,7 @@ class AuthService {
 
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('$baseUrl/auth/registro'),
+      Uri.parse('${ApiConfig.baseUrl}/auth/registro'),
     );
 
     // ========================================================
@@ -365,6 +375,16 @@ class AuthService {
         }
       }
 
+      if (usuario['FotoCarnet'] != null &&
+    usuario['FotoCarnet']
+        .toString()
+        .isNotEmpty) {
+  await prefs.setString(
+    'foto_carnet',
+    usuario['FotoCarnet'].toString(),
+  );
+}
+
       print('================================');
       print('REGISTRO CORRECTO');
       print(
@@ -412,7 +432,7 @@ class AuthService {
 
     final request = http.MultipartRequest(
       'PUT',
-      Uri.parse('$baseUrl/auth/perfil'),
+      Uri.parse('${ApiConfig.baseUrl}/auth/perfil'),
     );
 
     request.headers['Authorization'] =
@@ -489,6 +509,16 @@ class AuthService {
         }
       }
 
+      if (usuario['FotoCarnet'] != null &&
+    usuario['FotoCarnet']
+        .toString()
+        .isNotEmpty) {
+  await prefs.setString(
+    'foto_carnet',
+    usuario['FotoCarnet'].toString(),
+  );
+}
+
       return data;
     }
 
@@ -519,5 +549,6 @@ class AuthService {
     await prefs.remove('tipo_usuario');
     await prefs.remove('estado');
     await prefs.remove('foto_perfil');
+    await prefs.remove('foto_carnet');
   }
 }

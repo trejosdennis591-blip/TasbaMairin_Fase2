@@ -4,11 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/models/trade_request.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class TradeRequestService {
-  static const String baseUrl =
-      'http://192.168.1.26:3000/api';
-
   // ==========================================================
   // TOKEN
   // ==========================================================
@@ -59,11 +57,11 @@ class TradeRequestService {
   // CREAR SOLICITUD
   // ==========================================================
 
- static Future<void> crearSolicitud({
-  required int productoId,
-  required int usuarioOfreceId,
-  required String mensaje,
-}) async {
+  static Future<void> crearSolicitud({
+    required int productoId,
+    required int usuarioOfreceId,
+    required String mensaje,
+  }) async {
     final token =
         await _obtenerToken();
 
@@ -96,7 +94,7 @@ class TradeRequestService {
 
     final response = await http.post(
       Uri.parse(
-        '$baseUrl/trueques',
+        '${ApiConfig.baseUrl}/trueques',
       ),
       headers: {
         'Content-Type':
@@ -105,21 +103,17 @@ class TradeRequestService {
             'Bearer $token',
       },
       body: jsonEncode({
-  'productoOfrecidoId':
-      productoId,
-
-  'productoSolicitadoId':
-      productoId,
-
-  'usuarioOfreceId':
-      usuarioOfreceId,
-
-  'usuarioSolicitaId':
-      usuarioLogueado,
-
-  'mensaje':
-      mensaje,
-}),
+        'productoOfrecidoId':
+            productoId,
+        'productoSolicitadoId':
+            productoId,
+        'usuarioOfreceId':
+            usuarioOfreceId,
+        'usuarioSolicitaId':
+            usuarioLogueado,
+        'mensaje':
+            mensaje,
+      }),
     );
 
     print(
@@ -162,7 +156,7 @@ class TradeRequestService {
 
     final response = await http.get(
       Uri.parse(
-        '$baseUrl/trueques/mis-trueques',
+        '${ApiConfig.baseUrl}/trueques/mis-trueques',
       ),
       headers: {
         'Authorization':
@@ -225,11 +219,11 @@ class TradeRequestService {
 
         solicitanteId:
             t['UsuarioSolicitaID']
-                    .toString(),
+                .toString(),
 
         propietarioId:
             t['UsuarioOfreceID']
-                    .toString(),
+                .toString(),
 
         nombreSolicitante:
             t['NombreSolicitante']
@@ -266,7 +260,7 @@ class TradeRequestService {
     final response =
         await http.put(
       Uri.parse(
-        '$baseUrl/trueques/$id/estado',
+        '${ApiConfig.baseUrl}/trueques/$id/estado',
       ),
       headers: {
         'Content-Type':
@@ -298,7 +292,7 @@ class TradeRequestService {
     final response =
         await http.put(
       Uri.parse(
-        '$baseUrl/trueques/$id/estado',
+        '${ApiConfig.baseUrl}/trueques/$id/estado',
       ),
       headers: {
         'Content-Type':
@@ -330,7 +324,7 @@ class TradeRequestService {
     final response =
         await http.delete(
       Uri.parse(
-        '$baseUrl/trueques/$id',
+        '${ApiConfig.baseUrl}/trueques/$id',
       ),
       headers: {
         'Authorization':

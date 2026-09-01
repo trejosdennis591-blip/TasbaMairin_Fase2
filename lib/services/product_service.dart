@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/models/product.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class ProductService {
-  static const String baseUrl =
-      'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // OBTENER TOKEN
@@ -104,7 +103,7 @@ class ProductService {
     }
 
     final uri = Uri.parse(
-      '$baseUrl/productos',
+      '${ApiConfig.baseUrl}/productos',
     ).replace(
       queryParameters: parametros,
     );
@@ -143,7 +142,7 @@ class ProductService {
     final response =
         await http.get(
       Uri.parse(
-        '$baseUrl/productos/$productoId',
+        '${ApiConfig.baseUrl}/productos/$productoId',
       ),
     );
 
@@ -179,12 +178,12 @@ class ProductService {
         await _obtenerToken();
 
     final request =
-        http.MultipartRequest(
-      'POST',
-      Uri.parse(
-        '$baseUrl/productos',
-      ),
-    );
+    http.MultipartRequest(
+  'POST',
+  Uri.parse(
+    '${ApiConfig.baseUrl}/productos',
+  ),
+);
 
     // ========================================================
     // TOKEN
@@ -347,7 +346,7 @@ class ProductService {
     final response =
         await http.put(
       Uri.parse(
-        '$baseUrl/productos/$productoId',
+        '${ApiConfig.baseUrl}/productos/$productoId',
       ),
       headers: {
         'Content-Type':
@@ -385,7 +384,7 @@ class ProductService {
     final response =
         await http.delete(
       Uri.parse(
-        '$baseUrl/productos/$productoId',
+        '${ApiConfig.baseUrl}/productos/$productoId',
       ),
       headers: {
         'Authorization':
@@ -416,10 +415,10 @@ class ProductService {
         await _obtenerToken();
 
     final response =
-        await http.get(
-      Uri.parse(
-        '$baseUrl/productos/mis-productos',
-      ),
+    await http.get(
+  Uri.parse(
+    '${ApiConfig.baseUrl}/productos/mis-productos',
+  ),
       headers: {
         'Authorization':
             'Bearer $token',

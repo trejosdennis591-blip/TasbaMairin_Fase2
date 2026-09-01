@@ -2,14 +2,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class ResenaService {
-  // ==========================================================
-  // URL DEL BACKEND
-  // ==========================================================
-
-  static const String baseUrl =
-      'http://192.168.1.26:3000/api';
 
   // ==========================================================
   // OBTENER TOKEN
@@ -42,7 +37,7 @@ class ResenaService {
 
     final response = await http.get(
       Uri.parse(
-        '$baseUrl/resenas/producto/$productoId',
+        '${ApiConfig.baseUrl}/resenas/producto/$productoId',
       ),
       headers: {
         'Authorization': 'Bearer $token',
@@ -101,7 +96,7 @@ class ResenaService {
 
     final response = await http.post(
       Uri.parse(
-        '$baseUrl/resenas',
+        '${ApiConfig.baseUrl}/resenas',
       ),
       headers: {
         'Content-Type':
@@ -159,7 +154,7 @@ class ResenaService {
 
     final response = await http.put(
       Uri.parse(
-        '$baseUrl/resenas/$resenaId',
+        '${ApiConfig.baseUrl}/resenas/$resenaId',
       ),
       headers: {
         'Content-Type':
@@ -207,7 +202,7 @@ class ResenaService {
 
     final response = await http.delete(
       Uri.parse(
-        '$baseUrl/resenas/$resenaId',
+        '${ApiConfig.baseUrl}/resenas/$resenaId',
       ),
       headers: {
         'Authorization':

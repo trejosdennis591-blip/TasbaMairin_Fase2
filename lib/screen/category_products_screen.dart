@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/screen/product_detail_screen.dart';
 import 'package:flutter_application_1/services/product_service.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class CategoryProductsScreen extends StatefulWidget {
   final String categoria;
@@ -158,13 +159,13 @@ class _CategoryProductsScreenState
     // /uploads/productos/imagen.jpg
     // le agregamos el servidor.
     if (url.startsWith('/')) {
-      url = 'http://192.168.1.26:3000$url';
+      url = '${ApiConfig.serverUrl}$url';
     }
 
     // Si devuelve uploads/productos/imagen.jpg
     if (!url.startsWith('http://') &&
         !url.startsWith('https://')) {
-      url = 'http://192.168.1.26:3000/$url';
+      url = '${ApiConfig.serverUrl}$url';
     }
 
     return Image.network(

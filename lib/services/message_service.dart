@@ -4,11 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/models/message.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class MessageService {
-  static const String baseUrl =
-      'http://192.168.1.26:3000/api';
-
   // ==========================================================
   // OBTENER TOKEN
   // ==========================================================
@@ -85,7 +83,7 @@ class MessageService {
 
     print(
       'URL: '
-      '$baseUrl/mensajes/'
+      '${ApiConfig.baseUrl}/mensajes/'
       '$otroUsuarioId/'
       '$productoId',
     );
@@ -97,7 +95,7 @@ class MessageService {
     final response =
         await http.get(
       Uri.parse(
-        '$baseUrl/mensajes/'
+        '${ApiConfig.baseUrl}/mensajes/'
         '$otroUsuarioId/'
         '$productoId',
       ),
@@ -133,10 +131,6 @@ class MessageService {
     final usuarioActual =
         await _obtenerUsuarioId();
 
-    // ========================================================
-    // CONVERTIR MENSAJES
-    // ========================================================
-
     return lista.map<Message>((m) {
       final remitente =
           int.parse(
@@ -150,37 +144,26 @@ class MessageService {
                     m['MensajeID'].toString(),
                   )
                 : null,
-
         remitenteId:
             remitente.toString(),
-
         destinatarioId:
             m['DestinatarioID']
                 .toString(),
-
         mensaje:
             m['Contenido']
                     ?.toString() ??
                 '',
-
         fechaEnvio:
             DateTime.parse(
           m['FechaEnvio']
               .toString(),
         ),
-
         leido:
             m['Leido'].toString() == '1' ||
             m['Leido'] == true,
-
         mio:
             remitente ==
                 usuarioActual,
-
-        // ====================================================
-        // FOTO DE PERFIL
-        // ====================================================
-
         imagenPerfil:
             m['FotoPerfil']
                 ?.toString(),
@@ -207,12 +190,11 @@ class MessageService {
     final response =
         await http.post(
       Uri.parse(
-        '$baseUrl/mensajes',
+        '${ApiConfig.baseUrl}/mensajes',
       ),
       headers: {
         'Content-Type':
             'application/json',
-
         'Authorization':
             'Bearer $token',
       },
@@ -221,12 +203,10 @@ class MessageService {
             int.parse(
           destinatarioId,
         ),
-
         'productoId':
             int.parse(
           productoId,
         ),
-
         'contenido':
             mensaje.trim(),
       }),
@@ -266,7 +246,7 @@ class MessageService {
     final response =
         await http.get(
       Uri.parse(
-        '$baseUrl/mensajes/conversaciones',
+        '${ApiConfig.baseUrl}/mensajes/conversaciones',
       ),
       headers: {
         'Authorization':
@@ -305,31 +285,22 @@ class MessageService {
               item['usuarioId']
                       ?.toString() ??
                   '',
-
           'nombre':
               item['nombre']
                       ?.toString() ??
                   'Usuario',
-
           'productoId':
               item['productoId']
                       ?.toString() ??
                   '',
-
           'ultimoMensaje':
               item['ultimoMensaje']
                       ?.toString() ??
                   '',
-
           'hora':
               item['hora']
                       ?.toString() ??
                   '',
-
-          // ==================================================
-          // FOTO DE PERFIL
-          // ==================================================
-
           'imagenPerfil':
               item['imagenPerfil']
                       ?.toString() ??

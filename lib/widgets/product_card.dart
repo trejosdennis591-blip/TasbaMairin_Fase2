@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/screen/product_detail_screen.dart';
@@ -98,7 +99,7 @@ class _ProductCardState
 
       if (url.startsWith('/')) {
         url =
-            'http://192.168.1.26:3000$url';
+            '${ApiConfig.serverUrl}$url';
       }
 
       // Si ya viene como URL completa

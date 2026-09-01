@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/services/report_service.dart';
 
 class ReportProductScreen extends StatefulWidget {
-  final Product producto;
+  final int usuarioReportadoId;
 
   const ReportProductScreen({
     super.key,
-    required this.producto,
+    required this.usuarioReportadoId,
   });
 
   @override
@@ -21,17 +20,22 @@ class _ReportProductScreenState
   final TextEditingController descripcionController =
       TextEditingController();
 
-  String motivoSeleccionado = "Contenido inapropiado";
+  String motivoSeleccionado =
+      "Contenido inapropiado";
 
   final List<String> motivos = [
     "Contenido inapropiado",
     "Información falsa",
-    "Producto prohibido",
+    "Comportamiento inapropiado",
     "Spam",
     "Otro",
   ];
 
   bool enviando = false;
+
+  // ==========================================================
+  // ENVIAR REPORTE
+  // ==========================================================
 
   Future<void> enviarReporte() async {
     if (enviando) {
@@ -42,32 +46,57 @@ class _ReportProductScreenState
       enviando = true;
     });
 
-    await ReportService.crearReporte(
-  productoId: widget.producto.id,
-  motivo: motivoSeleccionado,
-  descripcion:
-      descripcionController.text.trim(),
-);
+    try {
+      await ReportService.crearReporte(
+        usuarioReportadoId:
+            widget.usuarioReportadoId,
+        motivo: motivoSeleccionado,
+        descripcion:
+            descripcionController.text.trim(),
+      );
 
-    if (!mounted) {
-      return;
-    }
+      if (!mounted) {
+        return;
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: Colors.green,
-        content: Text(
-          "Reporte enviado correctamente.",
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(
+            "Reporte enviado correctamente.",
+          ),
         ),
-      ),
-    );
+      );
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
 
-    setState(() {
-      enviando = false;
-    });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            error.toString().replaceFirst(
+              'Exception: ',
+              '',
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          enviando = false;
+        });
+      }
+    }
   }
+
+  // ==========================================================
+  // LIBERAR CONTROLADOR
+  // ==========================================================
 
   @override
   void dispose() {
@@ -75,52 +104,89 @@ class _ReportProductScreenState
     super.dispose();
   }
 
+  // ==========================================================
+  // PANTALLA
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor:
+          const Color(0xFFFFF4B8),
+
+      // ======================================================
+      // APP BAR
+      // ======================================================
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor:
+            const Color(0xFF016630),
 
         title: const Text(
-          "Reportar producto",
+          "Reportar usuario",
           style: TextStyle(
             color: Colors.white,
           ),
         ),
 
-        iconTheme: const IconThemeData(
+        iconTheme:
+            const IconThemeData(
           color: Colors.white,
         ),
       ),
 
+      // ======================================================
+      // CONTENIDO
+      // ======================================================
+
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding:
+            const EdgeInsets.all(20),
 
         child: Column(
           crossAxisAlignment:
               CrossAxisAlignment.start,
 
           children: [
-            Text(
-              widget.producto.nombre,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const Text(
+              "Reportar usuario",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(
+              height: 10,
+            ),
+
+            const Text(
+              "Selecciona el motivo del reporte y proporciona una descripción si lo consideras necesario.",
+              style: TextStyle(
+                fontSize: 15,
+              ),
+            ),
+
+            const SizedBox(
+              height: 25,
+            ),
+
+            // ==================================================
+            // MOTIVO
+            // ==================================================
 
             const Text(
               "Motivo",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             Container(
               padding:
@@ -128,89 +194,153 @@ class _ReportProductScreenState
                 horizontal: 15,
               ),
 
-              decoration: BoxDecoration(
+              decoration:
+                  BoxDecoration(
                 color: Colors.white,
                 borderRadius:
-                    BorderRadius.circular(15),
+                    BorderRadius.circular(
+                  15,
+                ),
               ),
 
-              child: DropdownButton<String>(
+              child:
+                  DropdownButton<String>(
                 isExpanded: true,
-                underline: const SizedBox(),
+                underline:
+                    const SizedBox(),
 
-                value: motivoSeleccionado,
+                value:
+                    motivoSeleccionado,
 
-                items: motivos.map(
+                items:
+                    motivos.map(
                   (motivo) {
-                    return DropdownMenuItem(
+                    return DropdownMenuItem<
+                        String>(
                       value: motivo,
-                      child: Text(motivo),
+                      child:
+                          Text(motivo),
                     );
                   },
                 ).toList(),
 
-                onChanged: (valor) {
+                onChanged:
+                    (valor) {
                   if (valor == null) {
                     return;
                   }
 
                   setState(() {
-                    motivoSeleccionado = valor;
+                    motivoSeleccionado =
+                        valor;
                   });
                 },
               ),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(
+              height: 25,
+            ),
+
+            // ==================================================
+            // DESCRIPCIÓN
+            // ==================================================
 
             const Text(
               "Descripción (opcional)",
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(
+              height: 10,
+            ),
 
             TextField(
-              controller: descripcionController,
+              controller:
+                  descripcionController,
+
               maxLines: 4,
 
-              decoration: InputDecoration(
+              decoration:
+                  InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                hintText:
+                    "Describe el problema...",
+
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
+                      BorderRadius.circular(
+                    15,
+                  ),
                 ),
               ),
             ),
 
             const Spacer(),
 
+            // ==================================================
+            // BOTÓN ENVIAR
+            // ==================================================
+
             SizedBox(
-              width: double.infinity,
+              width:
+                  double.infinity,
+
               height: 55,
 
-              child: ElevatedButton(
+              child:
+                  ElevatedButton(
                 style:
                     ElevatedButton.styleFrom(
                   backgroundColor:
                       Colors.red,
-                ),
 
-                onPressed: enviando
-                    ? null
-                    : enviarReporte,
-
-                child: const Text(
-                  "Enviar reporte",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
+                  shape:
+                      RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(
+                      15,
+                    ),
                   ),
                 ),
+
+                onPressed:
+                    enviando
+                        ? null
+                        : enviarReporte,
+
+                child:
+                    enviando
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child:
+                                CircularProgressIndicator(
+                              color:
+                                  Colors.white,
+                              strokeWidth:
+                                  2,
+                            ),
+                          )
+                        : const Text(
+                            "Enviar reporte",
+                            style:
+                                TextStyle(
+                              color:
+                                  Colors.white,
+                              fontSize:
+                                  18,
+                              fontWeight:
+                                  FontWeight.bold,
+                            ),
+                          ),
               ),
             ),
           ],
