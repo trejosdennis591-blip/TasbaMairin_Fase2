@@ -6,6 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/models/message.dart';
 import 'package:flutter_application_1/config/api_config.dart';
 
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as path;
+
 class MessageService {
   // ==========================================================
   // OBTENER TOKEN
@@ -144,26 +147,37 @@ class MessageService {
                     m['MensajeID'].toString(),
                   )
                 : null,
+
         remitenteId:
             remitente.toString(),
+
         destinatarioId:
             m['DestinatarioID']
                 .toString(),
+
         mensaje:
             m['Contenido']
                     ?.toString() ??
                 '',
+
+        imagen:
+            m['Imagen']
+                ?.toString(),
+
         fechaEnvio:
             DateTime.parse(
           m['FechaEnvio']
               .toString(),
         ),
+
         leido:
             m['Leido'].toString() == '1' ||
             m['Leido'] == true,
+
         mio:
             remitente ==
                 usuarioActual,
+
         imagenPerfil:
             m['FotoPerfil']
                 ?.toString(),
@@ -176,62 +190,129 @@ class MessageService {
   // ==========================================================
 
   static Future<void> enviarMensaje({
-    required String destinatarioId,
-    required String productoId,
-    required String mensaje,
-  }) async {
-    if (mensaje.trim().isEmpty) {
-      return;
+  required String destinatarioId,
+  required String productoId,
+  required String mensaje,
+  String? imagenPath,
+}) async {
+  final token =
+      await _obtenerToken();
+
+  final request =
+      http.MultipartRequest(
+    'POST',
+    Uri.parse(
+      '${ApiConfig.baseUrl}/mensajes',
+    ),
+  );
+
+  request.headers[
+          'Authorization'] =
+      'Bearer $token';
+
+  request.fields[
+          'destinatarioId'] =
+      destinatarioId;
+
+  request.fields[
+          'productoId'] =
+      productoId;
+
+  request.fields[
+          'contenido'] =
+      mensaje.trim();
+
+  if (imagenPath != null &&
+      imagenPath.isNotEmpty) {
+
+    final extension =
+        path.extension(imagenPath).toLowerCase();
+
+    MediaType tipoImagen;
+
+    switch (extension) {
+      case '.jpg':
+      case '.jpeg':
+        tipoImagen =
+            MediaType('image', 'jpeg');
+        break;
+
+      case '.png':
+        tipoImagen =
+            MediaType('image', 'png');
+        break;
+
+      case '.webp':
+        tipoImagen =
+            MediaType('image', 'webp');
+        break;
+
+      default:
+        throw Exception(
+          'Formato de imagen no permitido: $extension',
+        );
     }
 
-    final token =
-        await _obtenerToken();
-
-    final response =
-        await http.post(
-      Uri.parse(
-        '${ApiConfig.baseUrl}/mensajes',
-      ),
-      headers: {
-        'Content-Type':
-            'application/json',
-        'Authorization':
-            'Bearer $token',
-      },
-      body: jsonEncode({
-        'destinatarioId':
-            int.parse(
-          destinatarioId,
-        ),
-        'productoId':
-            int.parse(
-          productoId,
-        ),
-        'contenido':
-            mensaje.trim(),
-      }),
+    print(
+      '========== ARCHIVO A ENVIAR ==========',
     );
 
     print(
-      'ENVIAR MENSAJE STATUS: '
-      '${response.statusCode}',
+      'PATH: $imagenPath',
     );
 
     print(
-      'ENVIAR MENSAJE BODY: '
-      '${response.body}',
+      'EXTENSION: $extension',
     );
 
-    final data =
-        jsonDecode(response.body);
+    print(
+      'MIME: $tipoImagen',
+    );
 
-    if (response.statusCode != 201) {
-      throw Exception(
-        data['mensaje'] ??
-            'No se pudo enviar el mensaje',
-      );
-    }
+    print(
+      '=======================================',
+    );
+
+    final archivo =
+        await http.MultipartFile.fromPath(
+      'imagen',
+      imagenPath,
+      contentType: tipoImagen,
+    );
+
+    request.files.add(
+      archivo,
+    );
   }
+
+  final streamedResponse =
+      await request.send();
+
+  final response =
+      await http.Response.fromStream(
+    streamedResponse,
+  );
+
+  print(
+    'ENVIAR MENSAJE STATUS: '
+    '${response.statusCode}',
+  );
+
+  print(
+    'ENVIAR MENSAJE BODY: '
+    '${response.body}',
+  );
+
+  final data =
+      jsonDecode(response.body);
+
+  if (response.statusCode != 201) {
+    throw Exception(
+      data['mensaje'] ??
+          'No se pudo enviar el mensaje',
+    );
+  }
+}
 
   // ==========================================================
   // OBTENER CONVERSACIONES
@@ -285,22 +366,27 @@ class MessageService {
               item['usuarioId']
                       ?.toString() ??
                   '',
+
           'nombre':
               item['nombre']
                       ?.toString() ??
                   'Usuario',
+
           'productoId':
               item['productoId']
                       ?.toString() ??
                   '',
+
           'ultimoMensaje':
               item['ultimoMensaje']
                       ?.toString() ??
                   '',
+
           'hora':
               item['hora']
                       ?.toString() ??
                   '',
+
           'imagenPerfil':
               item['imagenPerfil']
                       ?.toString() ??
@@ -308,6 +394,43 @@ class MessageService {
         };
       },
     ).toList();
+  }
+
+  // ==========================================================
+  // OBTENER MENSAJES NO LEÍDOS
+  // ==========================================================
+
+  static Future<int>
+      obtenerMensajesNoLeidos() async {
+    final token =
+        await _obtenerToken();
+
+    final response =
+        await http.get(
+      Uri.parse(
+        '${ApiConfig.baseUrl}/mensajes/conversaciones',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $token',
+      },
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        data['mensaje'] ??
+            'No se pudieron obtener las notificaciones',
+      );
+    }
+
+    return int.tryParse(
+          data['mensajesNoLeidos']
+              .toString(),
+        ) ??
+        0;
   }
 
   // ==========================================================

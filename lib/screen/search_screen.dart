@@ -8,38 +8,62 @@ import 'package:flutter_application_1/data/products_data.dart';
 import 'package:flutter_application_1/models/product.dart';
 import 'package:flutter_application_1/screen/home_screen.dart';
 import 'package:flutter_application_1/screen/product_detail_screen.dart';
+import 'package:flutter_application_1/config/api_config.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({
+    super.key,
+  });
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  State<SearchScreen> createState() =>
+      _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState
+    extends State<SearchScreen> {
   String textoBusqueda = "";
 
   // ==========================================================
   // MOSTRAR IMAGEN DEL PRODUCTO
   // ==========================================================
 
-  Widget mostrarImagenProducto(Product producto) {
-    
+  Widget mostrarImagenProducto(
+    Product producto,
+  ) {
+    // ========================================================
+    // 1. BASE64
+    // ========================================================
+
     if (producto.imagenBase64 != null &&
-        producto.imagenBase64!.isNotEmpty) {
+        producto.imagenBase64!
+            .trim()
+            .isNotEmpty) {
       try {
+        String valor =
+            producto.imagenBase64!.trim();
+
+        if (valor.contains(',')) {
+          valor =
+              valor.split(',').last;
+        }
+
         final Uint8List bytes =
-            base64Decode(producto.imagenBase64!);
+            base64Decode(valor);
 
         return Image.memory(
           bytes,
-          width: 55,
-          height: 55,
+          width: 65,
+          height: 65,
           fit: BoxFit.cover,
+          errorBuilder:
+              (_, __, ___) {
+            return imagenVacia();
+          },
         );
       } catch (e) {
         debugPrint(
-          "ERROR DECODIFICANDO IMAGEN BASE64: $e",
+          "ERROR DECODIFICANDO BASE64: $e",
         );
       }
     }
@@ -49,17 +73,20 @@ class _SearchScreenState extends State<SearchScreen> {
     // ========================================================
 
     if (producto.imagenUsuario != null &&
-        producto.imagenUsuario!.isNotEmpty) {
+        producto.imagenUsuario!
+            .trim()
+            .isNotEmpty) {
       try {
-        final archivo = File(
+        final archivo =
+            File(
           producto.imagenUsuario!,
         );
 
         if (archivo.existsSync()) {
           return Image.file(
             archivo,
-            width: 55,
-            height: 55,
+            width: 65,
+            height: 65,
             fit: BoxFit.cover,
           );
         }
@@ -71,24 +98,121 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     // ========================================================
-    // 3. IMAGEN ASSET
+    // 3. IMAGEN DEL SERVIDOR
     // ========================================================
 
     if (producto.imagen != null &&
-        producto.imagen!.isNotEmpty) {
-      return Image.asset(
-        producto.imagen!,
-        width: 55,
-        height: 55,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
-          return imagenVacia();
-        },
+        producto.imagen!
+            .trim()
+            .isNotEmpty) {
+      final valor =
+          producto.imagen!.trim();
+
+      debugPrint(
+        "IMAGEN PRODUCTO: $valor",
       );
+
+      // ------------------------------------------------------
+      // URL COMPLETA
+      // ------------------------------------------------------
+
+      if (valor.startsWith(
+            'http://',
+          ) ||
+          valor.startsWith(
+            'https://',
+          )) {
+        return Image.network(
+          valor,
+          width: 65,
+          height: 65,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            debugPrint(
+              "ERROR IMAGEN NETWORK: $error",
+            );
+
+            return imagenVacia();
+          },
+        );
+      }
+
+      // ------------------------------------------------------
+      // RUTA DEL BACKEND
+      // ------------------------------------------------------
+
+      if (valor.startsWith('/')) {
+        final baseUrl =
+            ApiConfig.baseUrl
+                .replaceAll(
+              '/api',
+              '',
+            );
+
+        final urlFinal =
+            '$baseUrl$valor';
+
+        debugPrint(
+          "URL FINAL PRODUCTO: $urlFinal",
+        );
+
+        return Image.network(
+          urlFinal,
+          width: 65,
+          height: 65,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            debugPrint(
+              "ERROR CARGANDO IMAGEN PRODUCTO: $error",
+            );
+
+            debugPrint(
+              "URL QUE FALLÓ: $urlFinal",
+            );
+
+            return imagenVacia();
+          },
+        );
+      }
+
+      // ------------------------------------------------------
+      // ASSET DE FLUTTER
+      // ------------------------------------------------------
+
+      if (valor.startsWith(
+            'assets/',
+          )) {
+        return Image.asset(
+          valor,
+          width: 65,
+          height: 65,
+          fit: BoxFit.cover,
+          errorBuilder:
+              (context, error, stackTrace) {
+            return imagenVacia();
+          },
+        );
+      }
+
+      // ------------------------------------------------------
+      // ARCHIVO LOCAL
+      // ------------------------------------------------------
+
+      try {
+        final archivo =
+            File(valor);
+
+        if (archivo.existsSync()) {
+          return Image.file(
+            archivo,
+            width: 65,
+            height: 65,
+            fit: BoxFit.cover,
+          );
+        }
+      } catch (_) {}
     }
 
     // ========================================================
@@ -104,8 +228,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget imagenVacia() {
     return Container(
-      width: 55,
-      height: 55,
+      width: 65,
+      height: 65,
       color: Colors.grey.shade200,
       child: const Icon(
         Icons.image_not_supported,
@@ -120,27 +244,35 @@ class _SearchScreenState extends State<SearchScreen> {
   // ==========================================================
 
   @override
-  Widget build(BuildContext context) {
-    List<Product> resultados = [
+  Widget build(
+    BuildContext context,
+  ) {
+    final List<Product> resultados =
+        [
       ...productosDestacados,
       ...productosRecientes,
-    ].where((producto) {
-      return producto.nombre
-          .toLowerCase()
-          .contains(
-            textoBusqueda.toLowerCase(),
-          );
-    }).toList();
+    ].where(
+      (producto) {
+        return producto.nombre
+            .toLowerCase()
+            .contains(
+              textoBusqueda
+                  .toLowerCase(),
+            );
+      },
+    ).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF4B8),
+      backgroundColor:
+          const Color(0xFFFFF4B8),
 
       // ======================================================
       // APP BAR
       // ======================================================
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF016630),
+        backgroundColor:
+            const Color(0xFF016630),
 
         centerTitle: true,
 
@@ -151,7 +283,8 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
 
-        iconTheme: const IconThemeData(
+        iconTheme:
+            const IconThemeData(
           color: Colors.white,
         ),
       ),
@@ -161,7 +294,8 @@ class _SearchScreenState extends State<SearchScreen> {
       // ======================================================
 
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding:
+            const EdgeInsets.all(16),
 
         child: Column(
           children: [
@@ -172,25 +306,33 @@ class _SearchScreenState extends State<SearchScreen> {
             TextField(
               onChanged: (value) {
                 setState(() {
-                  textoBusqueda = value;
+                  textoBusqueda =
+                      value;
                 });
               },
 
-              decoration: InputDecoration(
-                hintText: "Buscar producto...",
+              decoration:
+                  InputDecoration(
+                hintText:
+                    "Buscar producto...",
 
-                prefixIcon: const Icon(
+                prefixIcon:
+                    const Icon(
                   Icons.search,
                 ),
 
                 filled: true,
 
-                fillColor: Colors.white,
+                fillColor:
+                    Colors.white,
 
-                border: OutlineInputBorder(
+                border:
+                    OutlineInputBorder(
                   borderRadius:
-                      BorderRadius.circular(15),
-
+                      BorderRadius
+                          .circular(
+                    15,
+                  ),
                   borderSide:
                       BorderSide.none,
                 ),
@@ -206,131 +348,166 @@ class _SearchScreenState extends State<SearchScreen> {
             // ==================================================
 
             Expanded(
-              child: resultados.isEmpty
-                  ? const Center(
-                      child: Text(
-                        "No se encontraron productos.",
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount:
-                          resultados.length,
-
-                      itemBuilder:
-                          (context, index) {
-                        final Product producto =
-                            resultados[index];
-
-                        return Card(
-                          margin:
-                              const EdgeInsets.only(
-                            bottom: 15,
-                          ),
-
-                          shape:
-                              RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(
-                              15,
+              child:
+                  resultados.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "No se encontraron productos.",
+                            style:
+                                TextStyle(
+                              fontSize:
+                                  17,
+                              color:
+                                  Colors.grey,
                             ),
                           ),
+                        )
+                      : ListView.builder(
+                          itemCount:
+                              resultados
+                                  .length,
 
-                          child: ListTile(
-                            // ==================================================
-                            // IMAGEN
-                            // ==================================================
+                          itemBuilder:
+                              (
+                            context,
+                            index,
+                          ) {
+                            final Product
+                                producto =
+                                resultados[
+                                    index];
 
-                            leading: ClipRRect(
-                              borderRadius:
-                                  BorderRadius.circular(
-                                8,
+                            return Card(
+                              margin:
+                                  const EdgeInsets
+                                      .only(
+                                bottom:
+                                    15,
+                              ),
+
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  15,
+                                ),
                               ),
 
                               child:
-                                  mostrarImagenProducto(
-                                producto,
-                              ),
-                            ),
-
-                            // ==================================================
-                            // NOMBRE
-                            // ==================================================
-
-                            title: Text(
-                              producto.nombre,
-
-                              style:
-                                  const TextStyle(
-                                fontWeight:
-                                    FontWeight.bold,
-                              ),
-                            ),
-
-                            // ==================================================
-                            // UBICACIÓN
-                            // ==================================================
-
-                            subtitle: Text(
-                              producto.comunidad.isNotEmpty
-                                  ? producto.comunidad
-                                  : "Ubicación no disponible",
-                            ),
-
-                            // ==================================================
-                            // BOTÓN VER
-                            // ==================================================
-
-                            trailing:
-                                ElevatedButton(
-                              style:
-                                  ElevatedButton
-                                      .styleFrom(
-                                backgroundColor:
-                                    const Color(
-                                  0xFFD0872E,
+                                  ListTile(
+                                contentPadding:
+                                    const EdgeInsets
+                                        .symmetric(
+                                  horizontal:
+                                      10,
+                                  vertical:
+                                      6,
                                 ),
 
-                                shape:
-                                    RoundedRectangleBorder(
+                                // ==================================================
+                                // IMAGEN
+                                // ==================================================
+
+                                leading:
+                                    ClipRRect(
                                   borderRadius:
-                                      BorderRadius.circular(
-                                    20,
+                                      BorderRadius
+                                          .circular(
+                                    8,
+                                  ),
+
+                                  child:
+                                      mostrarImagenProducto(
+                                    producto,
                                   ),
                                 ),
-                              ),
 
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        ProductDetailScreen(
-                                      producto:
-                                          producto,
+                                // ==================================================
+                                // NOMBRE
+                                // ==================================================
+
+                                title:
+                                    Text(
+                                  producto
+                                      .nombre,
+
+                                  style:
+                                      const TextStyle(
+                                    fontWeight:
+                                        FontWeight
+                                            .bold,
+                                  ),
+                                ),
+
+                                // ==================================================
+                                // UBICACIÓN
+                                // ==================================================
+
+                                subtitle:
+                                    Text(
+                                  producto
+                                          .comunidad
+                                          .isNotEmpty
+                                      ? producto
+                                          .comunidad
+                                      : "Ubicación no disponible",
+                                ),
+
+                                // ==================================================
+                                // BOTÓN VER
+                                // ==================================================
+
+                                trailing:
+                                    ElevatedButton(
+                                  style:
+                                      ElevatedButton
+                                          .styleFrom(
+                                    backgroundColor:
+                                        const Color(
+                                      0xFFD0872E,
+                                    ),
+
+                                    shape:
+                                        RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                        20,
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
 
-                              child:
-                                  const Text(
-                                "Ver",
+                                  onPressed:
+                                      () {
+                                    Navigator
+                                        .push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) =>
+                                                ProductDetailScreen(
+                                          producto:
+                                              producto,
+                                        ),
+                                      ),
+                                    );
+                                  },
 
-                                style:
-                                    TextStyle(
-                                  color:
-                                      Colors.white,
+                                  child:
+                                      const Text(
+                                    "Ver",
+                                    style:
+                                        TextStyle(
+                                      color:
+                                          Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

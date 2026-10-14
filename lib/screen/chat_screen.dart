@@ -3,9 +3,12 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:flutter_application_1/models/message.dart';
 import 'package:flutter_application_1/services/message_service.dart';
+import 'package:flutter_application_1/config/api_config.dart';
+import 'package:flutter_application_1/screen/public_profile_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final String nombre;
@@ -22,19 +25,19 @@ class ChatScreen extends StatefulWidget {
   });
 
   @override
-  State<ChatScreen> createState() =>
-      _ChatScreenState();
+  State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState
-    extends State<ChatScreen> {
-  final TextEditingController
-      mensajeController =
+class _ChatScreenState extends State<ChatScreen> {
+  final TextEditingController mensajeController =
       TextEditingController();
 
-  final ScrollController
-      scrollController =
+  final ScrollController scrollController =
       ScrollController();
+
+  final ImagePicker picker = ImagePicker();
+
+  XFile? imagenSeleccionada;
 
   List<Message> mensajes = [];
 
@@ -66,10 +69,8 @@ class _ChatScreenState
 
       final resultado =
           await MessageService.obtenerMensajes(
-        otroUsuarioId:
-            widget.usuarioId,
-        productoId:
-            widget.productoId,
+        otroUsuarioId: widget.usuarioId,
+        productoId: widget.productoId,
       );
 
       if (!mounted) {
@@ -95,25 +96,21 @@ class _ChatScreenState
   }
 
   // ==========================================================
-  // OBTENER IMAGEN DEL OTRO USUARIO
+  // OBTENER IMAGEN DEL USUARIO
   // ==========================================================
 
   String? obtenerImagenUsuario() {
     for (final mensaje in mensajes) {
       if (!mensaje.mio &&
           mensaje.imagenPerfil != null &&
-          mensaje.imagenPerfil!
-              .trim()
-              .isNotEmpty) {
+          mensaje.imagenPerfil!.trim().isNotEmpty) {
         return mensaje.imagenPerfil;
       }
     }
 
     for (final mensaje in mensajes) {
       if (mensaje.imagenPerfil != null &&
-          mensaje.imagenPerfil!
-              .trim()
-              .isNotEmpty) {
+          mensaje.imagenPerfil!.trim().isNotEmpty) {
         return mensaje.imagenPerfil;
       }
     }
@@ -122,154 +119,314 @@ class _ChatScreenState
   }
 
   // ==========================================================
-  // MOSTRAR IMAGEN
+  // CONSTRUIR URL DE IMAGEN
+  // ==========================================================
+
+  String construirUrlImagen(String imagen) {
+    final valor = imagen.trim();
+
+    if (valor.startsWith('http://') ||
+        valor.startsWith('https://')) {
+      return valor;
+    }
+
+    String baseUrl = ApiConfig.baseUrl.trim();
+
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(
+        0,
+        baseUrl.length - 1,
+      );
+    }
+
+    if (baseUrl.endsWith('/api')) {
+      baseUrl = baseUrl.substring(
+        0,
+        baseUrl.length - 4,
+      );
+    }
+
+    if (valor.startsWith('/')) {
+      return '$baseUrl$valor';
+    }
+
+    return '$baseUrl/$valor';
+  }
+
+  // ==========================================================
+  // MOSTRAR IMAGEN DE PERFIL
   // ==========================================================
 
   Widget mostrarImagenPerfil({
     double radio = 22,
   }) {
-    final imagen =
-        obtenerImagenUsuario();
-
-    // --------------------------------------------------------
-    // SIN IMAGEN
-    // --------------------------------------------------------
+    final imagen = obtenerImagenUsuario();
 
     if (imagen == null ||
         imagen.trim().isEmpty) {
       return CircleAvatar(
         radius: radio,
-        backgroundColor:
-            Colors.white,
+        backgroundColor: Colors.white,
         child: Icon(
           Icons.person,
-          color:
-              const Color(0xFF016630),
+          color: const Color(0xFF016630),
           size: radio * 1.1,
         ),
       );
     }
 
-    final valor =
-        imagen.trim();
+    final valor = imagen.trim();
 
-    // --------------------------------------------------------
     // BASE64
-    // --------------------------------------------------------
-
     try {
-      String base64String =
-          valor;
+      String base64String = valor;
 
-      if (base64String
-          .contains(',')) {
+      if (base64String.contains(',')) {
         base64String =
-            base64String
-                .split(',')
-                .last;
+            base64String.split(',').last;
       }
 
       final Uint8List bytes =
-          base64Decode(
-        base64String,
-      );
+          base64Decode(base64String);
 
       return CircleAvatar(
         radius: radio,
-        backgroundColor:
-            Colors.white,
-        backgroundImage:
-            MemoryImage(bytes),
+        backgroundColor: Colors.white,
+        backgroundImage: MemoryImage(bytes),
       );
-    } catch (_) {
-      // Continuamos con las siguientes opciones.
-    }
+    } catch (_) {}
 
-    // --------------------------------------------------------
     // ARCHIVO LOCAL
-    // --------------------------------------------------------
-
     try {
-      final archivo =
-          File(valor);
+      final archivo = File(valor);
 
       if (archivo.existsSync()) {
         return CircleAvatar(
           radius: radio,
-          backgroundColor:
-              Colors.white,
-          backgroundImage:
-              FileImage(archivo),
+          backgroundColor: Colors.white,
+          backgroundImage: FileImage(archivo),
         );
       }
     } catch (_) {}
 
-    // --------------------------------------------------------
     // URL
-    // --------------------------------------------------------
+    try {
+      final url = construirUrlImagen(valor);
 
-    if (valor.startsWith('http://') ||
-        valor.startsWith('https://')) {
       return CircleAvatar(
         radius: radio,
-        backgroundColor:
-            Colors.white,
-        backgroundImage:
-            NetworkImage(valor),
-        onBackgroundImageError:
-            (_, __) {},
+        backgroundColor: Colors.white,
+        backgroundImage: NetworkImage(url),
       );
-    }
-
-    // --------------------------------------------------------
-    // RESPALDO
-    // --------------------------------------------------------
+    } catch (_) {}
 
     return CircleAvatar(
       radius: radio,
-      backgroundColor:
-          Colors.white,
+      backgroundColor: Colors.white,
       child: Icon(
         Icons.person,
-        color:
-            const Color(0xFF016630),
+        color: const Color(0xFF016630),
         size: radio * 1.1,
       ),
     );
   }
 
   // ==========================================================
-  // ENVIAR
+  // SELECCIONAR IMAGEN
+  // ==========================================================
+
+  Future<void> seleccionarImagen() async {
+    try {
+      final XFile? imagen =
+          await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+
+      if (imagen == null) {
+        print(
+          'NO SE SELECCIONÓ NINGUNA IMAGEN',
+        );
+        return;
+      }
+
+      print(
+        '========== IMAGEN SELECCIONADA ==========',
+      );
+
+      print(
+        'PATH: ${imagen.path}',
+      );
+
+      print(
+        'NAME: ${imagen.name}',
+      );
+
+      print(
+        'EXISTS: ${File(imagen.path).existsSync()}',
+      );
+
+      print(
+        '=========================================',
+      );
+
+      setState(() {
+        imagenSeleccionada = imagen;
+      });
+    } catch (e) {
+      print(
+        'ERROR AL SELECCIONAR IMAGEN: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo seleccionar la imagen: $e',
+          ),
+        ),
+      );
+    }
+  }
+
+  // ==========================================================
+  // VISTA PREVIA DE IMAGEN
+  // ==========================================================
+
+  Widget vistaPreviaImagen() {
+    if (imagenSeleccionada == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      color: Colors.white,
+      child: Row(
+        children: [
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(12),
+                child: Image.file(
+                  File(imagenSeleccionada!.path),
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      imagenSeleccionada = null;
+                    });
+                  },
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration:
+                        const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(width: 12),
+
+          const Expanded(
+            child: Text(
+              'Imagen seleccionada',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // ENVIAR MENSAJE
   // ==========================================================
 
   Future<void> enviarMensaje() async {
     final texto =
         mensajeController.text.trim();
 
-    if (texto.isEmpty) {
+    print(
+      '========== INTENTANDO ENVIAR ==========',
+    );
+
+    print(
+      'TEXTO: "$texto"',
+    );
+
+    print(
+      'IMAGEN PATH: ${imagenSeleccionada?.path}',
+    );
+
+    print(
+      'IMAGEN NULL: ${imagenSeleccionada == null}',
+    );
+
+    print(
+      '=======================================',
+    );
+
+    if (texto.isEmpty &&
+        imagenSeleccionada == null) {
       return;
     }
 
     try {
       await MessageService.enviarMensaje(
-        destinatarioId:
-            widget.usuarioId,
-        productoId:
-            widget.productoId,
-        mensaje:
-            texto,
+        destinatarioId: widget.usuarioId,
+        productoId: widget.productoId,
+        mensaje: texto,
+        imagenPath:
+            imagenSeleccionada?.path,
       );
 
-      mensajeController.clear();
-
-      await cargarMensajes();
-    } catch (e) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
+      mensajeController.clear();
+
+      setState(() {
+        imagenSeleccionada = null;
+      });
+
+      await cargarMensajes();
+    } catch (e) {
+      print(
+        'ERROR ENVIANDO MENSAJE: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'No se pudo enviar el mensaje: $e',
@@ -285,22 +442,14 @@ class _ChatScreenState
 
   void bajarAlFinal() {
     Future.delayed(
-      const Duration(
-        milliseconds: 200,
-      ),
+      const Duration(milliseconds: 200),
       () {
-        if (scrollController
-            .hasClients) {
+        if (scrollController.hasClients) {
           scrollController.animateTo(
-            scrollController
-                .position
-                .maxScrollExtent,
+            scrollController.position.maxScrollExtent,
             duration:
-                const Duration(
-              milliseconds: 300,
-            ),
-            curve:
-                Curves.easeOut,
+                const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
           );
         }
       },
@@ -311,13 +460,9 @@ class _ChatScreenState
   // AVATAR PEQUEÑO
   // ==========================================================
 
-  Widget avatarMensaje(
-    Message mensaje,
-  ) {
+  Widget avatarMensaje(Message mensaje) {
     if (mensaje.mio) {
-      return const SizedBox(
-        width: 36,
-      );
+      return const SizedBox(width: 36);
     }
 
     final imagen =
@@ -356,18 +501,16 @@ class _ChatScreenState
       );
     } catch (_) {}
 
-    if (imagen.startsWith(
-          'http://',
-        ) ||
-        imagen.startsWith(
-          'https://',
-        )) {
+    try {
+      final url =
+          construirUrlImagen(imagen);
+
       return CircleAvatar(
         radius: 18,
         backgroundImage:
-            NetworkImage(imagen),
+            NetworkImage(url),
       );
-    }
+    } catch (_) {}
 
     return const CircleAvatar(
       radius: 18,
@@ -399,27 +542,56 @@ class _ChatScreenState
         bottom: 12,
       ),
       padding:
-          const EdgeInsets.all(14),
+          const EdgeInsets.all(10),
       decoration:
           BoxDecoration(
         color: mensaje.mio
-            ? const Color(
-                0xFF016630,
-              )
+            ? const Color(0xFF016630)
             : Colors.white,
         borderRadius:
-            BorderRadius.circular(
-          15,
-        ),
+            BorderRadius.circular(15),
       ),
-      child: Text(
-        mensaje.mensaje,
-        style: TextStyle(
-          color: mensaje.mio
-              ? Colors.white
-              : Colors.black,
-          fontSize: 16,
-        ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          // IMAGEN
+          if (mensaje.imagen != null &&
+              mensaje.imagen!
+                  .trim()
+                  .isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.only(
+                bottom: 8,
+              ),
+              child:
+                  _mostrarImagenMensaje(
+                mensaje.imagen!,
+              ),
+            ),
+
+          // TEXTO
+          if (mensaje.mensaje
+              .trim()
+              .isNotEmpty)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 5,
+                vertical: 4,
+              ),
+              child: Text(
+                mensaje.mensaje,
+                style: TextStyle(
+                  color: mensaje.mio
+                      ? Colors.white
+                      : Colors.black,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+        ],
       ),
     );
 
@@ -435,16 +607,102 @@ class _ChatScreenState
       crossAxisAlignment:
           CrossAxisAlignment.end,
       children: [
-        avatarMensaje(
-          mensaje,
-        ),
-        const SizedBox(
-          width: 8,
-        ),
+        avatarMensaje(mensaje),
+
+        const SizedBox(width: 8),
+
         Flexible(
           child: contenido,
         ),
       ],
+    );
+  }
+
+  // ==========================================================
+  // MOSTRAR IMAGEN DEL MENSAJE
+  // ==========================================================
+
+  Widget _mostrarImagenMensaje(
+    String imagen,
+  ) {
+    final valor =
+        imagen.trim();
+
+    print(
+      '========== MOSTRANDO IMAGEN ==========',
+    );
+
+    print(
+      'IMAGEN RECIBIDA: $valor',
+    );
+
+    final urlImagen =
+        construirUrlImagen(valor);
+
+    print(
+      'URL FINAL IMAGEN: $urlImagen',
+    );
+
+    return ClipRRect(
+      borderRadius:
+          BorderRadius.circular(12),
+      child: Image.network(
+        urlImagen,
+        width: 220,
+        height: 220,
+        fit: BoxFit.cover,
+
+        loadingBuilder:
+            (
+          context,
+          child,
+          loadingProgress,
+        ) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return const SizedBox(
+            width: 220,
+            height: 220,
+            child: Center(
+              child:
+                  CircularProgressIndicator(
+                color:
+                    Color(0xFF016630),
+              ),
+            ),
+          );
+        },
+
+        errorBuilder:
+            (
+          context,
+          error,
+          stackTrace,
+        ) {
+          print(
+            'ERROR CARGANDO IMAGEN: $error',
+          );
+
+          print(
+            'URL QUE FALLÓ: $urlImagen',
+          );
+
+          return Container(
+            width: 220,
+            height: 220,
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: Icon(
+                Icons.broken_image,
+                size: 50,
+                color: Colors.grey,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -472,10 +730,6 @@ class _ChatScreenState
       backgroundColor:
           const Color(0xFFFFF4B8),
 
-      // ========================================================
-      // APP BAR
-      // ========================================================
-
       appBar: AppBar(
         backgroundColor:
             const Color(0xFF016630),
@@ -485,34 +739,58 @@ class _ChatScreenState
           color: Colors.white,
         ),
 
-        title: Row(
-          children: [
-            mostrarImagenPerfil(
-              radio: 22,
-            ),
+        title: GestureDetector(
+  onTap: () {
+    final usuarioId =
+        widget.usuarioId.trim();
 
-            const SizedBox(
-              width: 12,
-            ),
+    if (usuarioId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se encontró el usuario de este chat.',
+          ),
+        ),
+      );
+      return;
+    }
 
-            Expanded(
-              child: Text(
-                widget.nombre,
-                style:
-                    const TextStyle(
-                  color: Colors.white,
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(
+          usuarioId: usuarioId,
+        ),
+      ),
+    );
+  },
+  child: Row(
+    children: [
+      mostrarImagenPerfil(
+        radio: 22,
+      ),
+
+      const SizedBox(width: 12),
+
+      Expanded(
+        child: Text(
+          widget.nombre,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
 
-      // ========================================================
-      // BODY
-      // ========================================================
+      const Icon(
+        Icons.person_outline,
+        color: Colors.white,
+        size: 22,
+                ),
+              ],
+            ),
+          ),
+      ),
 
       body: cargando
           ? const Center(
@@ -526,16 +804,13 @@ class _ChatScreenState
               ? Center(
                   child: Padding(
                     padding:
-                        const EdgeInsets
-                            .all(30),
+                        const EdgeInsets.all(30),
                     child: Column(
                       mainAxisAlignment:
-                          MainAxisAlignment
-                              .center,
+                          MainAxisAlignment.center,
                       children: [
                         const Icon(
-                          Icons
-                              .error_outline,
+                          Icons.error_outline,
                           size: 60,
                           color: Colors.red,
                         ),
@@ -547,8 +822,7 @@ class _ChatScreenState
                         Text(
                           error!,
                           textAlign:
-                              TextAlign
-                                  .center,
+                              TextAlign.center,
                         ),
 
                         const SizedBox(
@@ -569,10 +843,6 @@ class _ChatScreenState
                 )
               : Column(
                   children: [
-                    // ==================================================
-                    // MENSAJES
-                    // ==================================================
-
                     Expanded(
                       child:
                           mensajes.isEmpty
@@ -581,8 +851,7 @@ class _ChatScreenState
                                     'No hay mensajes todavía.\n'
                                     'Envía el primer mensaje.',
                                     textAlign:
-                                        TextAlign
-                                            .center,
+                                        TextAlign.center,
                                     style:
                                         TextStyle(
                                       color:
@@ -595,24 +864,17 @@ class _ChatScreenState
                               : ListView.builder(
                                   controller:
                                       scrollController,
-
                                   padding:
-                                      const EdgeInsets
-                                          .all(
-                                    15,
-                                  ),
-
+                                      const EdgeInsets.all(15),
                                   itemCount:
                                       mensajes.length,
-
                                   itemBuilder:
                                       (
                                     context,
                                     index,
                                   ) {
                                     return burbujaMensaje(
-                                      mensajes[
-                                          index],
+                                      mensajes[index],
                                     );
                                   },
                                 ),
@@ -623,78 +885,90 @@ class _ChatScreenState
                     // ==================================================
 
                     Container(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-
-                      color:
-                          Colors.white,
-
-                      child: Row(
+                      color: Colors.white,
+                      child: Column(
                         children: [
-                          Expanded(
-                            child:
-                                TextField(
-                              controller:
-                                  mensajeController,
+                          vistaPreviaImagen(),
 
-                              textInputAction:
-                                  TextInputAction
-                                      .send,
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                // BOTÓN IMAGEN
+                                IconButton(
+                                  icon:
+                                      const Icon(
+                                    Icons.image,
+                                    color:
+                                        Color(0xFF016630),
+                                  ),
+                                  onPressed:
+                                      seleccionarImagen,
+                                ),
 
-                              onSubmitted:
-                                  (_) {
-                                enviarMensaje();
-                              },
+                                // CAMPO TEXTO
+                                Expanded(
+                                  child:
+                                      TextField(
+                                    controller:
+                                        mensajeController,
 
-                              decoration:
-                                  InputDecoration(
-                                hintText:
-                                    'Escribe un mensaje...',
+                                    textInputAction:
+                                        TextInputAction.send,
 
-                                border:
-                                    OutlineInputBorder(
-                                  borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                    30,
+                                    onSubmitted:
+                                        (_) {
+                                      enviarMensaje();
+                                    },
+
+                                    decoration:
+                                        InputDecoration(
+                                      hintText:
+                                          'Escribe un mensaje...',
+
+                                      border:
+                                          OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(
+                                          30,
+                                        ),
+                                      ),
+
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                    ),
                                   ),
                                 ),
 
-                                contentPadding:
-                                    const EdgeInsets
-                                        .symmetric(
-                                  horizontal:
-                                      20,
+                                const SizedBox(
+                                  width: 10,
                                 ),
-                              ),
-                            ),
-                          ),
 
-                          const SizedBox(
-                            width: 10,
-                          ),
-
-                          CircleAvatar(
-                            backgroundColor:
-                                const Color(
-                              0xFF016630,
-                            ),
-
-                            child:
-                                IconButton(
-                              icon:
-                                  const Icon(
-                                Icons.send,
-                                color:
-                                    Colors.white,
-                              ),
-
-                              onPressed:
-                                  enviarMensaje,
+                                // BOTÓN VERDE
+                                CircleAvatar(
+                                  backgroundColor:
+                                      const Color(
+                                    0xFF016630,
+                                  ),
+                                  child:
+                                      IconButton(
+                                    icon:
+                                        const Icon(
+                                      Icons.send,
+                                      color:
+                                          Colors.white,
+                                    ),
+                                    onPressed:
+                                        enviarMensaje,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

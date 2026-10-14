@@ -12,6 +12,7 @@ import 'package:flutter_application_1/screen/trade_request_screen.dart';
 import 'package:flutter_application_1/screen/report_product_screen.dart';
 import 'package:flutter_application_1/services/favorite_service.dart';
 import 'package:flutter_application_1/services/resena_service.dart';
+import 'package:flutter_application_1/screen/public_profile_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Product producto;
@@ -53,6 +54,17 @@ class _ProductDetailScreenState
   String tipoUsuario = '';
 
   // ==========================================================
+  // COLORES DEL DISEÑO 3
+  // ==========================================================
+
+  static const Color verde = Color(0xFF016630);
+  static const Color verdeClaro = Color(0xFFE8F3EA);
+  static const Color crema = Color(0xFFFFFDF5);
+  static const Color amarilloFondo = Color(0xFFFFF4B8);
+  static const Color naranja = Color(0xFFD0872E);
+  static const Color rojo = Color(0xFFD32F2F);
+
+  // ==========================================================
   // INICIO
   // ==========================================================
 
@@ -69,34 +81,27 @@ class _ProductDetailScreenState
   // ==========================================================
 
   Future<void> cargarUsuarioActual() async {
-    final prefs =
-        await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-    final id =
-        prefs.getString('usuario_id');
-
-    final nombre =
-        prefs.getString('nombre');
-
-    final tipo =
-    prefs.getString('tipo_usuario');
+    final id = prefs.getString('usuario_id');
+    final nombre = prefs.getString('nombre');
+    final tipo = prefs.getString('tipo_usuario');
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-  usuarioActualId =
-      id != null ? int.tryParse(id) : null;
+      usuarioActualId =
+          id != null ? int.tryParse(id) : null;
 
-  nombreUsuarioActual =
-      nombre != null &&
-              nombre.trim().isNotEmpty
-          ? nombre.trim()
-          : "Usuario";
+      nombreUsuarioActual =
+          nombre != null && nombre.trim().isNotEmpty
+              ? nombre.trim()
+              : "Usuario";
 
-  tipoUsuario = tipo ?? '';
-});
+      tipoUsuario = tipo ?? '';
+    });
   }
 
   // ==========================================================
@@ -138,131 +143,119 @@ class _ProductDetailScreenState
   // ==========================================================
 
   Widget mostrarImagen() {
-  // ========================================================
-  // IMAGEN BASE64
-  // ========================================================
+    // ========================================================
+    // BASE64
+    // ========================================================
 
-  if (widget.producto.imagenBase64 != null &&
-      widget.producto.imagenBase64!.isNotEmpty) {
-    try {
-      final Uint8List bytes = base64Decode(
-        widget.producto.imagenBase64!,
-      );
+    if (widget.producto.imagenBase64 != null &&
+        widget.producto.imagenBase64!.isNotEmpty) {
+      try {
+        final Uint8List bytes = base64Decode(
+          widget.producto.imagenBase64!,
+        );
 
-      return Image.memory(
-        bytes,
-        width: double.infinity,
-        height: 230,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
-          return imagenVacia();
-        },
-      );
-    } catch (_) {
-      // Continuamos con las siguientes opciones.
-    }
-  }
-
-  // ========================================================
-  // IMAGEN DEL TELÉFONO
-  // ========================================================
-
-  if (widget.producto.imagenUsuario != null &&
-      widget.producto.imagenUsuario!.isNotEmpty) {
-    final archivo = File(
-      widget.producto.imagenUsuario!,
-    );
-
-    if (archivo.existsSync()) {
-      return Image.file(
-        archivo,
-        width: double.infinity,
-        height: 230,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
-          return imagenVacia();
-        },
-      );
-    }
-  }
-
-  // ========================================================
-  // IMAGEN DEL SERVIDOR
-  // ========================================================
-
-  if (widget.producto.imagen != null &&
-      widget.producto.imagen!.isNotEmpty) {
-    String url =
-        widget.producto.imagen!.trim();
-
-    // Si viene así:
-    // /uploads/productos/imagen.jpg
-    if (url.startsWith('/')) {
-      url =
-          '${ApiConfig.serverUrl}$url';
-    }
-
-    // Si viene así:
-    // uploads/productos/imagen.jpg
-    if (!url.startsWith('http://') &&
-        !url.startsWith('https://')) {
-      url =
-          '${ApiConfig.serverUrl}$url';
-    }
-
-    return Image.network(
-      url,
-      width: double.infinity,
-      height: 230,
-      fit: BoxFit.cover,
-      loadingBuilder: (
-        context,
-        child,
-        loadingProgress,
-      ) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
-        return Container(
+        return Image.memory(
+          bytes,
           width: double.infinity,
-          height: 230,
-          color: Colors.grey.shade200,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF016630),
+          height: 300,
+          fit: BoxFit.cover,
+          errorBuilder: (
+            context,
+            error,
+            stackTrace,
+          ) {
+            return imagenVacia();
+          },
+        );
+      } catch (_) {}
+    }
+
+    // ========================================================
+    // IMAGEN DEL TELÉFONO
+    // ========================================================
+
+    if (widget.producto.imagenUsuario != null &&
+        widget.producto.imagenUsuario!.isNotEmpty) {
+      final archivo = File(
+        widget.producto.imagenUsuario!,
+      );
+
+      if (archivo.existsSync()) {
+        return Image.file(
+          archivo,
+          width: double.infinity,
+          height: 300,
+          fit: BoxFit.cover,
+          errorBuilder: (
+            context,
+            error,
+            stackTrace,
+          ) {
+            return imagenVacia();
+          },
+        );
+      }
+    }
+
+    // ========================================================
+    // IMAGEN DEL SERVIDOR
+    // ========================================================
+
+    if (widget.producto.imagen != null &&
+        widget.producto.imagen!.isNotEmpty) {
+      String url =
+          widget.producto.imagen!.trim();
+
+      if (url.startsWith('/')) {
+        url = '${ApiConfig.serverUrl}$url';
+      }
+
+      if (!url.startsWith('http://') &&
+          !url.startsWith('https://')) {
+        url = '${ApiConfig.serverUrl}$url';
+      }
+
+      return Image.network(
+        url,
+        width: double.infinity,
+        height: 300,
+        fit: BoxFit.cover,
+        loadingBuilder: (
+          context,
+          child,
+          loadingProgress,
+        ) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return Container(
+            width: double.infinity,
+            height: 300,
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: verde,
+              ),
             ),
-          ),
-        );
-      },
-      errorBuilder: (
-        context,
-        error,
-        stackTrace,
-      ) {
-        debugPrint(
-          'ERROR IMAGEN DETALLE: $url',
-        );
+          );
+        },
+        errorBuilder: (
+          context,
+          error,
+          stackTrace,
+        ) {
+          debugPrint(
+            'ERROR IMAGEN DETALLE: $url',
+          );
 
-        return imagenVacia();
-      },
-    );
+          return imagenVacia();
+        },
+      );
+    }
+
+    return imagenVacia();
   }
-
-  // ========================================================
-  // SIN IMAGEN
-  // ========================================================
-
-  return imagenVacia();
-}
 
   // ==========================================================
   // IMAGEN VACÍA
@@ -271,7 +264,7 @@ class _ProductDetailScreenState
   Widget imagenVacia() {
     return Container(
       width: double.infinity,
-      height: 230,
+      height: 300,
       color: Colors.grey.shade200,
       child: const Center(
         child: Icon(
@@ -282,6 +275,36 @@ class _ProductDetailScreenState
       ),
     );
   }
+
+  // ==========================================================
+// VER PERFIL DEL USUARIO
+// ==========================================================
+
+void verPerfilUsuario() {
+  final String usuarioId =
+      widget.producto.usuarioId.trim();
+
+  if (usuarioId.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'No se encontró el usuario que publicó este producto.',
+        ),
+      ),
+    );
+
+    return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PublicProfileScreen(
+        usuarioId: usuarioId,
+      ),
+    ),
+  );
+}
 
   // ==========================================================
   // CONTACTAR
@@ -313,6 +336,142 @@ class _ProductDetailScreenState
           productoId:
               widget.producto.id.toString(),
         ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // CONTACTAR PARA TRUEQUE
+  // ==========================================================
+
+  void contactarTrueque() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TradeRequestScreen(
+          producto: widget.producto,
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // FAVORITO
+  // ==========================================================
+
+  Future<void> cambiarFavorito() async {
+    final bool eraFavorito =
+        FavoriteService.esFavorito(
+      widget.producto,
+    );
+
+    await FavoriteService.cambiarFavorito(
+      widget.producto,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: verde,
+        content: Text(
+          eraFavorito
+              ? "Producto eliminado de favoritos"
+              : "Producto guardado",
+        ),
+        duration:
+            const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // REPORTAR USUARIO
+  // ==========================================================
+
+  void reportarUsuario() {
+    final int? idUsuario =
+        int.tryParse(
+      widget.producto.usuarioId,
+    );
+
+    if (idUsuario == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "No se encontró el usuario.",
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ReportProductScreen(
+          usuarioReportadoId:
+              idUsuario,
+        ),
+      ),
+    );
+  }
+
+  // ==========================================================
+  // UBICACIÓN
+  // ==========================================================
+
+  void mostrarUbicacion() {
+    if (widget.producto.ubicacion
+        .trim()
+        .isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text(
+            "Ubicación",
+          ),
+          content: const Text(
+            "Este producto fue publicado antes de que se agregara el sistema de ubicación.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(context),
+              child: const Text(
+                "Aceptar",
+              ),
+            ),
+          ],
+        ),
+      );
+
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text(
+          "Ubicación del producto",
+        ),
+        content: Text(
+          widget.producto.ubicacion,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context),
+            child: const Text(
+              "Cerrar",
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -358,7 +517,7 @@ class _ProductDetailScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            "Escribe un comentario.",
+            "Escribe qué te pareció el producto.",
           ),
         ),
       );
@@ -394,7 +553,7 @@ class _ProductDetailScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: verde,
           content: Text(
             "Reseña publicada correctamente.",
           ),
@@ -413,7 +572,7 @@ class _ProductDetailScreenState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.red,
+          backgroundColor: rojo,
           content: Text(
             "No se pudo publicar la reseña: $e",
           ),
@@ -443,10 +602,10 @@ class _ProductDetailScreenState
                     seleccionarEstrella(
                       valor,
                     ),
-            iconSize: 42,
+            iconSize: 40,
             padding:
                 const EdgeInsets.symmetric(
-              horizontal: 3,
+              horizontal: 2,
             ),
             icon: Icon(
               valor <=
@@ -482,9 +641,51 @@ class _ProductDetailScreenState
                 ? Icons.star
                 : Icons.star_border,
             color: Colors.amber,
-            size: 20,
+            size: 19,
           );
         },
+      ),
+    );
+  }
+
+  // ==========================================================
+  // TARJETA DE ACCIÓN
+  // ==========================================================
+
+  Widget botonAccion({
+    required IconData icono,
+    required String texto,
+    required VoidCallback onPressed,
+    Color color = verde,
+    Color textoColor = Colors.white,
+  }) {
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: textoColor,
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.circular(16),
+          ),
+        ),
+        icon: Icon(
+          icono,
+          color: textoColor,
+        ),
+        label: Text(
+          texto,
+          style: TextStyle(
+            color: textoColor,
+            fontSize: 15,
+            fontWeight:
+                FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
@@ -501,47 +702,85 @@ class _ProductDetailScreenState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius:
-            BorderRadius.circular(15),
+            BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.green.shade100,
+        ),
       ),
       child: Column(
         crossAxisAlignment:
             CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Deja tu reseña",
-            style: TextStyle(
-              fontSize: 21,
-              fontWeight:
-                  FontWeight.bold,
-              color:
-                  Color(0xFF016630),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: verdeClaro,
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.rate_review_outlined,
+                  color: verde,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Dejar reseña",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight:
+                            FontWeight.bold,
+                        color: verde,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Cuéntanos qué te pareció el producto",
+                      style: TextStyle(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          const Center(
+            child: Text(
+              "¿Cómo calificas este producto?",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight:
+                    FontWeight.w600,
+              ),
             ),
           ),
 
-          const SizedBox(height: 8),
-
-          const Text(
-            "¿Qué te pareció este producto?",
-            style: TextStyle(
-              fontSize: 15,
-            ),
-          ),
-
-          const SizedBox(height: 10),
+          const SizedBox(height: 4),
 
           estrellasSeleccion(),
 
-          if (calificacionSeleccionada >
-              0)
+          if (calificacionSeleccionada > 0)
             Center(
               child: Text(
                 "${calificacionSeleccionada.toInt()} de 5 estrellas",
-                style:
-                    const TextStyle(
+                style: const TextStyle(
+                  color: verde,
                   fontWeight:
                       FontWeight.bold,
-                  color:
-                      Color(0xFF016630),
                 ),
               ),
             ),
@@ -553,40 +792,52 @@ class _ProductDetailScreenState
                 comentarioController,
             enabled:
                 !enviandoResena,
-            maxLines: 4,
+            maxLines: 5,
+            maxLength: 500,
             decoration:
                 InputDecoration(
               hintText:
-                  "Escribe tu experiencia con este producto...",
+                  "Escribe qué te pareció el producto, su calidad o tu experiencia...",
               filled: true,
               fillColor:
-                  Colors.grey.shade100,
+                  const Color(0xFFF8F8F4),
               border:
                   OutlineInputBorder(
                 borderRadius:
                     BorderRadius.circular(
                   15,
                 ),
+                borderSide:
+                    BorderSide.none,
+              ),
+              focusedBorder:
+                  OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(
+                  15,
+                ),
+                borderSide:
+                    const BorderSide(
+                  color: verde,
+                  width: 2,
+                ),
               ),
             ),
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(height: 8),
 
           SizedBox(
             width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
+            height: 52,
+            child: ElevatedButton.icon(
               onPressed:
                   enviandoResena
                       ? null
                       : enviarResena,
               style:
                   ElevatedButton.styleFrom(
-                backgroundColor:
-                    const Color(
-                  0xFF016630,
-                ),
+                backgroundColor: verde,
                 disabledBackgroundColor:
                     Colors.grey,
                 shape:
@@ -597,28 +848,33 @@ class _ProductDetailScreenState
                   ),
                 ),
               ),
-              child: enviandoResena
+              icon: enviandoResena
                   ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                      width: 20,
+                      height: 20,
                       child:
                           CircularProgressIndicator(
-                        color:
-                            Colors.white,
+                        color: Colors.white,
                         strokeWidth: 2,
                       ),
                     )
-                  : const Text(
-                      "Publicar reseña",
-                      style:
-                          TextStyle(
-                        color:
-                            Colors.white,
-                        fontSize: 16,
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
+                  : const Icon(
+                      Icons.star,
+                      color:
+                          Colors.white,
                     ),
+              label: Text(
+                enviandoResena
+                    ? "Publicando..."
+                    : "Enviar reseña",
+                style:
+                    const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],
@@ -638,8 +894,7 @@ class _ProductDetailScreenState
               EdgeInsets.all(20),
           child:
               CircularProgressIndicator(
-            color:
-                Color(0xFF016630),
+            color: verde,
           ),
         ),
       );
@@ -653,7 +908,7 @@ class _ProductDetailScreenState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius:
-              BorderRadius.circular(15),
+              BorderRadius.circular(18),
         ),
         child: const Column(
           children: [
@@ -672,7 +927,7 @@ class _ProductDetailScreenState
             ),
             SizedBox(height: 5),
             Text(
-              "Sé la primera persona en dejar una.",
+              "Sé la primera persona en dejar una opinión.",
               textAlign:
                   TextAlign.center,
               style: TextStyle(
@@ -736,9 +991,7 @@ class _ProductDetailScreenState
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius:
-                BorderRadius.circular(
-              15,
-            ),
+                BorderRadius.circular(18),
           ),
           child: Column(
             crossAxisAlignment:
@@ -748,9 +1001,7 @@ class _ProductDetailScreenState
                 children: [
                   CircleAvatar(
                     backgroundColor:
-                        const Color(
-                      0xFF016630,
-                    ),
+                        verde,
                     child: Text(
                       nombre.isNotEmpty
                           ? nombre
@@ -765,8 +1016,7 @@ class _ProductDetailScreenState
                         color:
                             Colors.white,
                         fontWeight:
-                            FontWeight
-                                .bold,
+                            FontWeight.bold,
                       ),
                     ),
                   ),
@@ -794,11 +1044,9 @@ class _ProductDetailScreenState
                             fontSize: 16,
                           ),
                         ),
-
                         const SizedBox(
                           height: 3,
                         ),
-
                         estrellasResena(
                           calificacion,
                         ),
@@ -816,7 +1064,8 @@ class _ProductDetailScreenState
                 comentario,
                 style:
                     const TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
+                  height: 1.4,
                 ),
               ),
 
@@ -867,6 +1116,229 @@ class _ProductDetailScreenState
   }
 
   // ==========================================================
+  // INFORMACIÓN DEL PRODUCTO
+  // ==========================================================
+
+  Widget informacionProducto() {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          if (widget.producto
+              .categoria
+              .isNotEmpty)
+            _filaInformacion(
+              Icons.category_outlined,
+              "Categoría",
+              widget.producto.categoria,
+            ),
+
+          if (widget.producto
+              .ubicacion
+              .isNotEmpty)
+            _filaInformacion(
+              Icons.location_on_outlined,
+              "Ubicación",
+              widget.producto.ubicacion,
+            ),
+
+          if (widget.producto
+              .cantidad
+              .isNotEmpty)
+            _filaInformacion(
+              Icons.inventory_2_outlined,
+              "Cantidad",
+              "${widget.producto.cantidad} ${widget.producto.unidad}",
+            ),
+
+          _filaInformacion(
+            Icons.swap_horiz,
+            "Acepta trueque",
+            widget.producto.trueque
+                    .trim()
+                    .isNotEmpty
+                ? widget.producto.trueque
+                : "No especificado",
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // FILA DE INFORMACIÓN
+  // ==========================================================
+
+  Widget _filaInformacion(
+    IconData icono,
+    String titulo,
+    String valor,
+  ) {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(
+        vertical: 8,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: verdeClaro,
+              borderRadius:
+                  BorderRadius.circular(
+                12,
+              ),
+            ),
+            child: Icon(
+              icono,
+              color: verde,
+              size: 21,
+            ),
+          ),
+
+          const SizedBox(
+            width: 12,
+          ),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style:
+                      const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(
+                  height: 2,
+                ),
+                Text(
+                  valor,
+                  style:
+                      const TextStyle(
+                    fontSize: 15,
+                    fontWeight:
+                        FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
+  // CALIFICACIÓN GENERAL
+  // ==========================================================
+
+  Widget tarjetaCalificacion(
+    double promedio,
+    int cantidad,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding:
+          const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius:
+            BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFFFFF1C7,
+              ),
+              borderRadius:
+                  BorderRadius.circular(
+                18,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                  size: 27,
+                ),
+                Text(
+                  promedio
+                      .toStringAsFixed(1),
+                  style:
+                      const TextStyle(
+                    fontWeight:
+                        FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(
+            width: 15,
+          ),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Calificación del producto",
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight:
+                        FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                estrellasResena(
+                  promedio,
+                ),
+                const SizedBox(
+                  height: 3,
+                ),
+                Text(
+                  "$cantidad reseñas",
+                  style:
+                      const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================================
   // BUILD
   // ==========================================================
 
@@ -879,8 +1351,7 @@ class _ProductDetailScreenState
     if (resenas.isNotEmpty) {
       double suma = 0;
 
-      for (final resena
-          in resenas) {
+      for (final resena in resenas) {
         suma +=
             double.tryParse(
                   resena[
@@ -897,8 +1368,7 @@ class _ProductDetailScreenState
     final int cantidad =
         resenas.length;
 
-    final double
-        calificacionMostrar =
+    final double calificacionMostrar =
         cantidad > 0
             ? promedio
             : widget.producto
@@ -910,655 +1380,790 @@ class _ProductDetailScreenState
             : widget.producto
                 .cantidadResenas;
 
+    final bool esProveedor =
+        tipoUsuario.toLowerCase() ==
+            'proveedor';
+
+    final bool esFavorito =
+        FavoriteService.esFavorito(
+      widget.producto,
+    );
+
     return Scaffold(
       backgroundColor:
-          const Color(0xFFFFF4B8),
+          amarilloFondo,
+
+      // ======================================================
+      // APP BAR
+      // ======================================================
 
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xFF016630),
-        centerTitle: true,
+        backgroundColor: verde,
+        elevation: 0,
+        centerTitle: false,
         iconTheme:
             const IconThemeData(
           color: Colors.white,
         ),
-        title: Text(
-          widget.producto.nombre,
-          style:
-              const TextStyle(
+        title: const Text(
+          "Detalle del producto",
+          style: TextStyle(
             color: Colors.white,
+            fontWeight:
+                FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip:
+                "Guardar producto",
+            onPressed:
+                cambiarFavorito,
+            icon: Icon(
+              esFavorito
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+        ],
       ),
 
-      body:
-          SingleChildScrollView(
-        padding:
-            const EdgeInsets.all(
-          16,
-        ),
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-          children: [
-            // ==================================================
-            // IMAGEN
-            // ==================================================
+      // ======================================================
+      // CONTENIDO
+      // ======================================================
 
-            ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(
-                20,
-              ),
-              child:
-                  mostrarImagen(),
-            ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment:
+                CrossAxisAlignment.start,
+            children: [
+              // ==================================================
+              // IMAGEN PRINCIPAL
+              // ==================================================
 
-            const SizedBox(
-              height: 20,
-            ),
-
-            // ==================================================
-            // NOMBRE
-            // ==================================================
-
-            Text(
-              widget.producto.nombre,
-              style:
-                  const TextStyle(
-                fontSize: 28,
-                fontWeight:
-                    FontWeight.bold,
-                color:
-                    Color(0xFF016630),
-              ),
-            ),
-
-            const SizedBox(
-              height: 20,
-            ),
-
-            // ==================================================
-            // INFORMACIÓN
-            // ==================================================
-
-            Container(
-              width: double.infinity,
-              padding:
-                  const EdgeInsets.all(
-                15,
-              ),
-              decoration:
-                  BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(
-                  15,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment
-                        .start,
+              Stack(
                 children: [
-                  Row(
+                  SizedBox(
+                    width:
+                        double.infinity,
+                    height: 300,
+                    child:
+                        mostrarImagen(),
+                  ),
+
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: Container(
+                      padding:
+                          const EdgeInsets
+                              .symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration:
+                          BoxDecoration(
+                        color: Colors.black
+                            .withOpacity(
+                          0.60,
+                        ),
+                        borderRadius:
+                            BorderRadius
+                                .circular(
+                          20,
+                        ),
+                      ),
+                      child:
+                          const Row(
+                        mainAxisSize:
+                            MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.photo,
+                            color:
+                                Colors.white,
+                            size: 17,
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
+                          Text(
+                            "Producto",
+                            style:
+                                TextStyle(
+                              color:
+                                  Colors.white,
+                              fontWeight:
+                                  FontWeight
+                                      .bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // ==================================================
+              // TARJETA PRINCIPAL
+              // ==================================================
+
+              Transform.translate(
+                offset:
+                    const Offset(0, -18),
+                child: Container(
+                  width:
+                      double.infinity,
+                  padding:
+                      const EdgeInsets.all(
+                    20,
+                  ),
+                  decoration:
+                      const BoxDecoration(
+                    color: crema,
+                    borderRadius:
+                        BorderRadius.only(
+                      topLeft:
+                          Radius.circular(
+                        28,
+                      ),
+                      topRight:
+                          Radius.circular(
+                        28,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment
+                            .start,
                     children: [
-                      const Icon(
-                        Icons.category,
-                        color:
-                            Color(0xFF016630),
+                      // ==========================================
+                      // NOMBRE + CATEGORÍA
+                      // ==========================================
+
+                      Row(
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+                        children: [
+                          Expanded(
+                            child:
+                                Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment
+                                      .start,
+                              children: [
+                                Text(
+                                  widget
+                                      .producto
+                                      .nombre,
+                                  style:
+                                      const TextStyle(
+                                    fontSize:
+                                        27,
+                                    fontWeight:
+                                        FontWeight
+                                            .bold,
+                                    color:
+                                        verde,
+                                  ),
+                                ),
+
+                                if (widget
+                                    .producto
+                                    .categoria
+                                    .isNotEmpty)
+                                  Container(
+                                    margin:
+                                        const EdgeInsets
+                                            .only(
+                                      top:
+                                          8,
+                                    ),
+                                    padding:
+                                        const EdgeInsets
+                                            .symmetric(
+                                      horizontal:
+                                          11,
+                                      vertical:
+                                          6,
+                                    ),
+                                    decoration:
+                                        BoxDecoration(
+                                      color:
+                                          verdeClaro,
+                                      borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                        20,
+                                      ),
+                                    ),
+                                    child:
+                                        Text(
+                                      widget
+                                          .producto
+                                          .categoria,
+                                      style:
+                                          const TextStyle(
+                                        color:
+                                            verde,
+                                        fontWeight:
+                                            FontWeight
+                                                .bold,
+                                        fontSize:
+                                            13,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          IconButton(
+                            onPressed:
+                                cambiarFavorito,
+                            icon:
+                                Icon(
+                              esFavorito
+                                  ? Icons
+                                      .favorite
+                                  : Icons
+                                      .favorite_border,
+                              color:
+                                  esFavorito
+                                      ? Colors
+                                          .red
+                                      : verde,
+                              size:
+                                  30,
+                            ),
+                          ),
+                        ],
                       ),
+
                       const SizedBox(
-                        width: 10,
+                        height: 18,
                       ),
-                      Expanded(
+
+                      // ==========================================
+                      // DATOS RÁPIDOS
+                      // ==========================================
+
+                      informacionProducto(),
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      // ==========================================
+                      // DESCRIPCIÓN
+                      // ==========================================
+
+                      const Text(
+                        "Descripción",
+                        style:
+                            TextStyle(
+                          fontSize:
+                              20,
+                          fontWeight:
+                              FontWeight
+                                  .bold,
+                          color:
+                              verde,
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 8,
+                      ),
+
+                      Container(
+                        width:
+                            double.infinity,
+                        padding:
+                            const EdgeInsets
+                                .all(
+                          15,
+                        ),
+                        decoration:
+                            BoxDecoration(
+                          color:
+                              Colors.white,
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            16,
+                          ),
+                        ),
                         child: Text(
-                          widget.producto
-                              .categoria,
+                          widget
+                              .producto
+                              .descripcion
+                              .trim()
+                              .isNotEmpty
+                              ? widget
+                                  .producto
+                                  .descripcion
+                              : "No hay una descripción disponible.",
                           style:
                               const TextStyle(
-                            fontSize: 17,
+                            fontSize:
+                                15,
+                            height:
+                                1.45,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      // ==========================================
+                      // TRUEQUE
+                      // ==========================================
+
+                      Container(
+                        width:
+                            double.infinity,
+                        padding:
+                            const EdgeInsets
+                                .all(
+                          16,
+                        ),
+                        decoration:
+                            BoxDecoration(
+                          color:
+                              const Color(
+                            0xFFEAF6EC,
+                          ),
+                          borderRadius:
+                              BorderRadius
+                                  .circular(
+                            18,
+                          ),
+                          border:
+                              Border.all(
+                            color:
+                                Colors.green
+                                    .shade100,
+                          ),
+                        ),
+                        child:
+                            Row(
+                          children: [
+                            Container(
+                              width: 45,
+                              height: 45,
+                              decoration:
+                                  BoxDecoration(
+                                color:
+                                    Colors.white,
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  13,
+                                ),
+                              ),
+                              child:
+                                  const Icon(
+                                Icons
+                                    .swap_horiz,
+                                color:
+                                    verde,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 12,
+                            ),
+                            Expanded(
+                              child:
+                                  Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment
+                                        .start,
+                                children: [
+                                  const Text(
+                                    "Acepta trueque",
+                                    style:
+                                        TextStyle(
+                                      color:
+                                          verde,
+                                      fontWeight:
+                                          FontWeight
+                                              .bold,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 3,
+                                  ),
+                                  Text(
+                                    widget
+                                            .producto
+                                            .trueque
+                                            .trim()
+                                            .isNotEmpty
+                                        ? widget
+                                            .producto
+                                            .trueque
+                                        : "No especificado",
+                                    style:
+                                        const TextStyle(
+                                      fontSize:
+                                          14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      // ==========================================
+                      // CALIFICACIÓN
+                      // ==========================================
+
+                      tarjetaCalificacion(
+                        calificacionMostrar,
+                        resenasMostrar,
+                      ),
+
+                      const SizedBox(
+                        height: 22,
+                      ),
+
+                      // ==========================================
+                      // BOTONES PRINCIPALES
+                      // ==========================================
+
+                      if (!esProveedor) ...[
+                        const Text(
+                          "¿Qué quieres hacer?",
+                          style:
+                              TextStyle(
+                            fontSize: 20,
                             fontWeight:
                                 FontWeight
                                     .bold,
+                            color:
+                                verde,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
 
-                  if (widget.producto
-                      .ubicacion
-                      .isNotEmpty) ...[
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          color:
-                              Color(
-                            0xFF016630,
+                        const SizedBox(
+                          height: 12,
+                        ),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child:
+                                  botonAccion(
+                                icono:
+                                    Icons.swap_horiz,
+                                texto:
+                                    "Contactar para trueque",
+                                color:
+                                    verde,
+                                onPressed:
+                                    contactarTrueque,
+                              ),
+                            ),
+
+                            const SizedBox(
+                              width: 10,
+                            ),
+
+                            SizedBox(
+                              width: 58,
+                              height: 54,
+                              child:
+                                  OutlinedButton(
+                                onPressed:
+                                    cambiarFavorito,
+                                style:
+                                    OutlinedButton
+                                        .styleFrom(
+                                  side:
+                                      const BorderSide(
+                                    color:
+                                        verde,
+                                    ),
+                                  shape:
+                                      RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(
+                                      16,
+                                    ),
+                                  ),
+                                ),
+                                child:
+                                    Icon(
+                                  esFavorito
+                                      ? Icons
+                                          .favorite
+                                      : Icons
+                                          .favorite_border,
+                                  color:
+                                      esFavorito
+                                          ? Colors.red
+                                          : verde,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(
+                          height: 10,
+                        ),
+
+                        Row(
+  children: [
+    Expanded(
+      child: botonAccion(
+        icono:
+            Icons.message_outlined,
+        texto:
+            "Enviar mensaje",
+        color:
+            naranja,
+        onPressed:
+            contactar,
+      ),
+    ),
+
+    const SizedBox(
+      width: 10,
+    ),
+
+    Expanded(
+      child: botonAccion(
+        icono:
+            Icons.person_outline,
+        texto:
+            "Ver perfil",
+        color:
+            verde,
+        onPressed:
+            verPerfilUsuario,
+      ),
+    ),
+  ],
+),
+
+                        const SizedBox(
+                          height: 10,
+                        ),
+
+                        SizedBox(
+                          width:
+                              double.infinity,
+                          child:
+                              OutlinedButton.icon(
+                            onPressed:
+                                reportarUsuario,
+                            style:
+                                OutlinedButton
+                                    .styleFrom(
+                              minimumSize:
+                                  const Size(
+                                0,
+                                52,
+                              ),
+                              side:
+                                  const BorderSide(
+                                color:
+                                    rojo,
+                              ),
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  16,
+                                ),
+                              ),
+                            ),
+                            icon:
+                                const Icon(
+                              Icons
+                                  .flag_outlined,
+                              color:
+                                  rojo,
+                            ),
+                            label:
+                                const Text(
+                              "Reportar usuario",
+                              style:
+                                  TextStyle(
+                                color:
+                                    rojo,
+                                fontSize:
+                                    15,
+                                fontWeight:
+                                    FontWeight
+                                        .bold,
+                              ),
+                            ),
                           ),
                         ),
+
                         const SizedBox(
-                          width: 10,
+                          height: 10,
                         ),
-                        Expanded(
-                          child: Text(
-                            widget.producto
-                                .ubicacion,
+
+                        SizedBox(
+                          width:
+                              double.infinity,
+                          child:
+                              OutlinedButton.icon(
+                            onPressed:
+                                mostrarUbicacion,
                             style:
-                                const TextStyle(
-                              fontSize: 16,
+                                OutlinedButton
+                                    .styleFrom(
+                              minimumSize:
+                                  const Size(
+                                0,
+                                52,
+                              ),
+                              side:
+                                  const BorderSide(
+                                color:
+                                    naranja,
+                              ),
+                              shape:
+                                  RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  16,
+                                ),
+                              ),
+                            ),
+                            icon:
+                                const Icon(
+                              Icons
+                                  .location_on_outlined,
+                              color:
+                                  naranja,
+                            ),
+                            label:
+                                const Text(
+                              "Ver ubicación",
+                              style:
+                                  TextStyle(
+                                color:
+                                    naranja,
+                                fontSize:
+                                    15,
+                                fontWeight:
+                                    FontWeight
+                                        .bold,
+                              ),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  ],
 
-                  if (widget.producto
-                      .cantidad
-                      .isNotEmpty) ...[
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.inventory_2,
-                          color:
-                              Color(
-                            0xFF016630,
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        Text(
-                          "${widget.producto.cantidad} ${widget.producto.unidad}",
-                          style:
-                              const TextStyle(
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            const SizedBox(
-              height: 25,
-            ),
-
-            // ==================================================
-            // DESCRIPCIÓN
-            // ==================================================
-
-            const Text(
-              "Descripción",
-              style:
-                  TextStyle(
-                fontSize: 22,
-                fontWeight:
-                    FontWeight.bold,
-                color:
-                    Color(0xFF016630),
-              ),
-            ),
-
-            const SizedBox(
-              height: 10,
-            ),
-
-            Text(
-              widget.producto.descripcion,
-              style:
-                  const TextStyle(
-                fontSize: 16,
-              ),
-            ),
-
-            const SizedBox(
-              height: 25,
-            ),
-
-            // ==================================================
-            // TRUEQUE
-            // ==================================================
-
-            const Text(
-              "Intercambia por",
-              style:
-                  TextStyle(
-                fontSize: 22,
-                fontWeight:
-                    FontWeight.bold,
-                color:
-                    Color(0xFF016630),
-              ),
-            ),
-
-            const SizedBox(
-              height: 10,
-            ),
-
-            Container(
-              width: double.infinity,
-              padding:
-                  const EdgeInsets.all(
-                15,
-              ),
-              decoration:
-                  BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(
-                  15,
-                ),
-              ),
-              child: Text(
-                widget.producto.trueque
-                        .isNotEmpty
-                    ? widget.producto
-                        .trueque
-                    : "No especificado",
-                style:
-                    const TextStyle(
-                  fontSize: 16,
-                ),
-              ),
-            ),
-
-            const SizedBox(
-              height: 30,
-            ),
-
-            // ==================================================
-            // CALIFICACIÓN
-            // ==================================================
-
-            Container(
-              width: double.infinity,
-              padding:
-                  const EdgeInsets.all(
-                15,
-              ),
-              decoration:
-                  BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.circular(
-                  15,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment
-                            .center,
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color:
-                            Colors.amber,
-                        size: 30,
-                      ),
                       const SizedBox(
-                        width: 8,
+                        height: 28,
                       ),
-                      Text(
-                        calificacionMostrar
-                            .toStringAsFixed(
-                          1,
-                        ),
-                        style:
-                            const TextStyle(
-                          fontSize: 20,
-                          fontWeight:
-                              FontWeight.bold,
-                        ),
-                      ),
+
+                      // ==========================================
+                      // DEJAR RESEÑA
+                      // ==========================================
+
+                      if (!esProveedor)
+                        construirFormularioResena(),
+
                       const SizedBox(
-                        width: 8,
+                        height: 28,
                       ),
-                      Text(
-                        "($resenasMostrar reseñas)",
-                        style:
-                            const TextStyle(
-                          color:
-                              Colors.grey,
-                        ),
+
+                      // ==========================================
+                      // OPINIONES
+                      // ==========================================
+
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              "Opiniones de otros usuarios",
+                              style:
+                                  TextStyle(
+                                fontSize:
+                                    20,
+                                fontWeight:
+                                    FontWeight
+                                        .bold,
+                                color:
+                                    verde,
+                              ),
+                            ),
+                          ),
+                          if (resenas.isNotEmpty)
+                            Container(
+                              padding:
+                                  const EdgeInsets
+                                      .symmetric(
+                                horizontal:
+                                    10,
+                                vertical:
+                                    5,
+                              ),
+                              decoration:
+                                  BoxDecoration(
+                                color:
+                                    verdeClaro,
+                                borderRadius:
+                                    BorderRadius
+                                        .circular(
+                                  15,
+                                ),
+                              ),
+                              child:
+                                  Text(
+                                "${resenas.length}",
+                                style:
+                                    const TextStyle(
+                                  color:
+                                      verde,
+                                  fontWeight:
+                                      FontWeight
+                                          .bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(
+                        height: 12,
+                      ),
+
+                      construirResenas(),
+
+                      const SizedBox(
+                        height: 15,
                       ),
                     ],
                   ),
-
-                  const SizedBox(
-                    height: 5,
-                  ),
-
-                  estrellasResena(
-                    calificacionMostrar,
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(
-              height: 30,
-            ),
-
-            // ==================================================
-// BOTONES PRINCIPALES
-// SOLO COMPRADORES
-// ==================================================
-
-if (tipoUsuario.toLowerCase() != 'proveedor')
-  Row(
-    children: [
-      Expanded(
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                const Color(0xFF016630),
-            minimumSize:
-                const Size(0, 55),
-            shape:
-                RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(
-                15,
-              ),
-            ),
-          ),
-          onPressed: contactar,
-          icon: const Icon(
-            Icons.message,
-            color: Colors.white,
-          ),
-          label: const Text(
-            "Contactar",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-            ),
-          ),
-        ),
-      ),
-
-      const SizedBox(width: 10),
-
-      Expanded(
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor:
-                const Color(0xFFD0872E),
-            minimumSize:
-                const Size(0, 55),
-            shape:
-                RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(
-                15,
-              ),
-            ),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    TradeRequestScreen(
-                  producto:
-                      widget.producto,
-                ),
-              ),
-            );
-          },
-          icon: const Icon(
-            Icons.swap_horiz,
-            color: Colors.white,
-          ),
-          label: const Text(
-            "Trueque",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ),
-      ),
-
-      const SizedBox(width: 10),
-
-      IconButton(
-        iconSize: 35,
-        onPressed: () async {
-          final bool eraFavorito =
-              FavoriteService.esFavorito(
-            widget.producto,
-          );
-
-          await FavoriteService
-              .cambiarFavorito(
-            widget.producto,
-          );
-
-          if (!mounted) {
-            return;
-          }
-
-          setState(() {});
-
-          ScaffoldMessenger.of(context)
-              .showSnackBar(
-            SnackBar(
-              content: Text(
-                eraFavorito
-                    ? "Producto eliminado de favoritos"
-                    : "Producto agregado a favoritos",
-              ),
-              duration:
-                  const Duration(
-                seconds: 1,
-              ),
-            ),
-          );
-        },
-        icon: Icon(
-          FavoriteService.esFavorito(
-            widget.producto,
-          )
-              ? Icons.favorite
-              : Icons.favorite_border,
-          color: Colors.red,
-        ),
-      ),
-    ],
-  ),
-
-const SizedBox(
-  height: 15,
-),
-
-            // ==================================================
-// REPORTAR USUARIO
-// SOLO PARA COMPRADORES
-// ==================================================
-
-if (tipoUsuario == 'Comprador')
-  SizedBox(
-    width: double.infinity,
-    child: ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.red,
-        minimumSize: const Size(
-          0,
-          55,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(
-            15,
-          ),
-        ),
-      ),
-      onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ReportProductScreen(
-        usuarioReportadoId: int.parse(
-          widget.producto.usuarioId,
-        ),
-      ),
-    ),
-  );
-},
-      icon: const Icon(
-        Icons.report,
-        color: Colors.white,
-      ),
-      label: const Text(
-        'Reportar usuario',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 17,
-        ),
-      ),
-    ),
-  ),
-
-const SizedBox(
-  height: 15,
-),
-
-// ==================================================
-// UBICACIÓN
-// ==================================================
-
-if (tipoUsuario == 'Comprador')
-  SizedBox(
-    width: double.infinity,
-    child: OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        side: const BorderSide(
-          color: Color(0xFFD0872E),
-          width: 2,
-        ),
-        minimumSize: const Size(
-          0,
-          55,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-      ),
-      onPressed: () {
-        if (widget.producto.ubicacion.trim().isEmpty) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text(
-                "Ubicación",
-              ),
-              content: const Text(
-                "Este producto fue publicado antes de que se agregara el sistema de ubicación.",
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    "Aceptar",
-                  ),
-                ),
-              ],
-            ),
-          );
-
-          return;
-        }
-
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text(
-              "Ubicación del producto",
-            ),
-            content: Text(
-              widget.producto.ubicacion,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  "Cerrar",
                 ),
               ),
             ],
           ),
-        );
-      },
-      icon: const Icon(
-        Icons.location_on,
-        color: Color(0xFFD0872E),
-      ),
-      label: const Text(
-        "Ver ubicación",
-        style: TextStyle(
-          color: Color(0xFFD0872E),
-          fontSize: 17,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-  ),
-
-const SizedBox(
-  height: 30,
-),
-
-            // ==================================================
-            // FORMULARIO RESEÑA
-            // ==================================================
-
-            if (tipoUsuario.toLowerCase() != 'proveedor')
-  construirFormularioResena(),
-
-            const SizedBox(
-              height: 30,
-            ),
-
-            // ==================================================
-            // OPINIONES
-            // ==================================================
-
-            const Text(
-              "Opiniones de otros usuarios",
-              style:
-                  TextStyle(
-                fontSize: 22,
-                fontWeight:
-                    FontWeight.bold,
-                color:
-                    Color(0xFF016630),
-              ),
-            ),
-
-            const SizedBox(
-              height: 12,
-            ),
-
-            construirResenas(),
-
-            const SizedBox(
-              height: 30,
-            ),
-          ],
         ),
       ),
     );

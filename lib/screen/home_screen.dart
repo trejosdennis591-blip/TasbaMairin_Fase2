@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/services/product_service.dart';
+import 'package:flutter_application_1/services/message_service.dart';
 import 'package:flutter_application_1/data/products_data.dart';
 
 import 'package:flutter_application_1/screen/favorites_screen.dart';
@@ -10,10 +11,17 @@ import 'package:flutter_application_1/screen/profile_screen.dart';
 import 'package:flutter_application_1/screen/publish_product_screen.dart';
 import 'package:flutter_application_1/screen/search_screen.dart';
 import 'package:flutter_application_1/screen/category_products_screen.dart';
+import 'package:flutter_application_1/screen/notifications_screen.dart';
+import 'package:flutter_application_1/services/notification_service.dart';
 
 import 'package:flutter_application_1/widgets/category_card.dart';
 import 'package:flutter_application_1/widgets/product_card.dart';
 import '../widgets/ad_banner.dart';
+
+import 'package:flutter_application_1/screen/settings_screen.dart';
+import 'package:flutter_application_1/screen/my_products_screen.dart';
+import 'package:flutter_application_1/screen/my_reports_screen.dart';
+import 'centro_ayuda_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -26,6 +34,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool cargandoProductos = true;
+  int mensajesNoLeidos = 0;
+  int notificacionesNoLeidas = 0;
 
   // ============================================================
   // TIPO DE USUARIO
@@ -39,12 +49,56 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
 
-    cargarTipoUsuario();
-    cargarProductos();
+  cargarTipoUsuario();
+  cargarProductos();
+  cargarMensajesNoLeidos();
+  cargarNotificacionesNoLeidas();
+}
+
+// ============================================================
+// CARGAR MENSAJES NO LEÍDOS
+// ============================================================
+
+Future<void> cargarMensajesNoLeidos() async {
+  try {
+    final total =
+        await MessageService.obtenerMensajesNoLeidos();
+
+    if (!mounted) return;
+
+    setState(() {
+      mensajesNoLeidos = total;
+    });
+  } catch (e) {
+    debugPrint(
+      'ERROR CARGANDO MENSAJES: $e',
+    );
   }
+}
+
+// ============================================================
+// CARGAR NOTIFICACIONES NO LEÍDAS
+// ============================================================
+
+Future<void> cargarNotificacionesNoLeidas() async {
+  try {
+    final total =
+        await NotificationService.contarNoLeidas();
+
+    if (!mounted) return;
+
+    setState(() {
+      notificacionesNoLeidas = total;
+    });
+  } catch (e) {
+    debugPrint(
+      'ERROR CARGANDO NOTIFICACIONES: $e',
+    );
+  }
+}
 
   // ============================================================
   // CARGAR TIPO DE USUARIO
@@ -117,16 +171,243 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: fondo,
+  backgroundColor: fondo,
 
-      // ========================================================
-      // APP BAR
-      // ========================================================
+  drawer: Drawer(
+    child: SafeArea(
+      child: Column(
+        children: [
 
-      appBar: AppBar(
+          // ENCABEZADO
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(22),
+            color: verde,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.eco_rounded,
+                  color: Colors.white,
+                  size: 42,
+                ),
+
+                SizedBox(height: 10),
+
+                Text(
+                  "TasbaMairin",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                SizedBox(height: 4),
+
+                Text(
+                  "Menú principal",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // PERFIL
+          ListTile(
+            leading: const Icon(
+              Icons.person_outline_rounded,
+              color: verde,
+            ),
+            title: const Text("Mi perfil"),
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const ProfileScreen(),
+                ),
+              );
+            },
+          ),
+
+          // FAVORITOS
+          ListTile(
+            leading: const Icon(
+              Icons.favorite_border_rounded,
+              color: verde,
+            ),
+            title: const Text("Mis favoritos"),
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const FavoritesScreen(),
+                ),
+              );
+            },
+          ),
+
+          // MENSAJES
+          ListTile(
+            leading: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: verde,
+            ),
+            title: const Text("Mensajes"),
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const MessagesScreen(),
+                ),
+              );
+            },
+          ),
+
+          // NOTIFICACIONES
+          ListTile(
+            leading: const Icon(
+              Icons.notifications_none_rounded,
+              color: verde,
+            ),
+            title: const Text("Notificaciones"),
+            onTap: () async {
+              Navigator.pop(context);
+
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const NotificationsScreen(),
+                ),
+              );
+
+              await cargarNotificacionesNoLeidas();
+            },
+          ),
+
+          // MIS PRODUCTOS
+          ListTile(
+            leading: const Icon(
+              Icons.inventory_2_outlined,
+              color: verde,
+            ),
+            title: const Text("Mis productos"),
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const MyProductsScreen(),
+                ),
+              );
+            },
+          ),
+
+          // REPORTES
+          ListTile(
+            leading: const Icon(
+              Icons.report_problem_outlined,
+              color: verde,
+            ),
+            title: const Text("Mis reportes"),
+            onTap: () {
+              Navigator.pop(context);
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const MyReportsScreen(),
+                ),
+              );
+            },
+          ),
+
+          const Divider(),
+
+          // CONFIGURACIÓN
+ListTile(
+  leading: const Icon(
+    Icons.settings_outlined,
+    color: verde,
+  ),
+  title: const Text("Configuración"),
+  onTap: () {
+    Navigator.pop(context);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const SettingsScreen(),
+      ),
+    );
+  },
+),
+
+// AYUDA
+ListTile(
+  leading: const Icon(
+    Icons.help_outline_rounded,
+    color: verde,
+  ),
+  title: const Text("Ayuda"),
+  onTap: () {
+    Navigator.pop(context);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const CentroAyudaScreen(),
+      ),
+    );
+  },
+),
+
+        ],
+      ),
+    ),
+  ),
+
+// ========================================================
+// APP BAR
+// ========================================================
+
+appBar: AppBar(
         backgroundColor: verde,
         elevation: 0,
         automaticallyImplyLeading: false,
+
+        leading: Builder(
+  builder: (context) {
+    return IconButton(
+      icon: const Icon(
+        Icons.menu_rounded,
+        color: Colors.white,
+        size: 30,
+      ),
+      onPressed: () {
+        Scaffold.of(context).openDrawer();
+      },
+    );
+  },
+),
 
         titleSpacing: 20,
 
@@ -173,26 +454,74 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // ====================================================
-          // NOTIFICACIONES
-          // ====================================================
+// NOTIFICACIONES
+// ====================================================
 
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    "No tienes notificaciones nuevas.",
-                  ),
-                ),
-              );
-            },
+Stack(
+  clipBehavior: Clip.none,
+  children: [
+    IconButton(
+      onPressed: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                const NotificationsScreen(),
+          ),
+        );
 
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
+        await cargarNotificacionesNoLeidas();
+      },
+
+      icon: const Icon(
+        Icons.notifications_none_rounded,
+        color: Colors.white,
+      ),
+    ),
+
+    if (notificacionesNoLeidas > 0)
+      Positioned(
+        right: 4,
+        top: 4,
+
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 5,
+            vertical: 2,
+          ),
+
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius:
+                BorderRadius.circular(10),
+            border: Border.all(
+              color: verde,
+              width: 1.5,
             ),
           ),
+
+          constraints: const BoxConstraints(
+            minWidth: 18,
+            minHeight: 18,
+          ),
+
+          child: Text(
+            notificacionesNoLeidas > 99
+                ? '99+'
+                : notificacionesNoLeidas.toString(),
+
+            textAlign: TextAlign.center,
+
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+     ],
+),
 
           const SizedBox(width: 8),
         ],
@@ -610,6 +939,34 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               const SizedBox(height: 28),
+
+                                  const SizedBox(width: 12),
+
+                    // ==================================================
+                    // ANIMALES
+                    // ==================================================
+
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const CategoryProductsScreen(
+                              categoria:
+                                  "Animales",
+                            ),
+                          ),
+                        );
+                      },
+
+                      child:
+                          const CategoryCard(
+                        imagen:
+                            "assets/images/animales.jpg",
+                        texto: "Animales",
+                      ),
+                    ),
 
               // ==================================================
               // PRODUCTOS DESTACADOS

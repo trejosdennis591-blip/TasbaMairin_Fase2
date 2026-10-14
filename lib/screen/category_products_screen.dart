@@ -91,128 +91,128 @@ class _CategoryProductsScreenState
   // ==========================================================
 
   Widget mostrarImagen(Product producto) {
-  // ========================================================
-  // IMAGEN DEL TELÉFONO
-  // ========================================================
+    // ========================================================
+    // IMAGEN DEL TELÉFONO
+    // ========================================================
 
-  if (producto.imagenUsuario != null &&
-      producto.imagenUsuario!.isNotEmpty) {
-    final archivo = File(
-      producto.imagenUsuario!,
-    );
-
-    if (archivo.existsSync()) {
-      return Image.file(
-        archivo,
-        width: double.infinity,
-        height: 220,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
-          return imagenPredeterminada();
-        },
-      );
-    }
-  }
-
-  // ========================================================
-  // IMAGEN BASE64
-  // ========================================================
-
-  if (producto.imagenBase64 != null &&
-      producto.imagenBase64!.isNotEmpty) {
-    try {
-      final Uint8List bytes = base64Decode(
-        producto.imagenBase64!,
+    if (producto.imagenUsuario != null &&
+        producto.imagenUsuario!.isNotEmpty) {
+      final archivo = File(
+        producto.imagenUsuario!,
       );
 
-      return Image.memory(
-        bytes,
-        width: double.infinity,
-        height: 220,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          context,
-          error,
-          stackTrace,
-        ) {
-          return imagenPredeterminada();
-        },
-      );
-    } catch (_) {
-      // Continuamos con la imagen del servidor.
-    }
-  }
-
-  // ========================================================
-  // IMAGEN DEL SERVIDOR
-  // ========================================================
-
-  if (producto.imagen != null &&
-      producto.imagen!.isNotEmpty) {
-    String url = producto.imagen!.trim();
-
-    // Si el backend devuelve solamente:
-    // /uploads/productos/imagen.jpg
-    // le agregamos el servidor.
-    if (url.startsWith('/')) {
-      url = '${ApiConfig.serverUrl}$url';
-    }
-
-    // Si devuelve uploads/productos/imagen.jpg
-    if (!url.startsWith('http://') &&
-        !url.startsWith('https://')) {
-      url = '${ApiConfig.serverUrl}$url';
-    }
-
-    return Image.network(
-      url,
-      width: double.infinity,
-      height: 220,
-      fit: BoxFit.cover,
-      loadingBuilder: (
-        context,
-        child,
-        loadingProgress,
-      ) {
-        if (loadingProgress == null) {
-          return child;
-        }
-
-        return Container(
+      if (archivo.existsSync()) {
+        return Image.file(
+          archivo,
           width: double.infinity,
           height: 220,
-          color: Colors.grey.shade200,
-          child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF016630),
+          fit: BoxFit.cover,
+          errorBuilder: (
+            context,
+            error,
+            stackTrace,
+          ) {
+            return imagenPredeterminada();
+          },
+        );
+      }
+    }
+
+    // ========================================================
+    // IMAGEN BASE64
+    // ========================================================
+
+    if (producto.imagenBase64 != null &&
+        producto.imagenBase64!.isNotEmpty) {
+      try {
+        final Uint8List bytes = base64Decode(
+          producto.imagenBase64!,
+        );
+
+        return Image.memory(
+          bytes,
+          width: double.infinity,
+          height: 220,
+          fit: BoxFit.cover,
+          errorBuilder: (
+            context,
+            error,
+            stackTrace,
+          ) {
+            return imagenPredeterminada();
+          },
+        );
+      } catch (_) {
+        // Continuamos con la imagen del servidor.
+      }
+    }
+
+    // ========================================================
+    // IMAGEN DEL SERVIDOR
+    // ========================================================
+
+    if (producto.imagen != null &&
+        producto.imagen!.isNotEmpty) {
+      String url = producto.imagen!.trim();
+
+      // Si el backend devuelve solamente:
+      // /uploads/productos/imagen.jpg
+      // le agregamos el servidor.
+      if (url.startsWith('/')) {
+        url = '${ApiConfig.serverUrl}$url';
+      }
+
+      // Si devuelve uploads/productos/imagen.jpg
+      if (!url.startsWith('http://') &&
+          !url.startsWith('https://')) {
+        url = '${ApiConfig.serverUrl}$url';
+      }
+
+      return Image.network(
+        url,
+        width: double.infinity,
+        height: 220,
+        fit: BoxFit.cover,
+        loadingBuilder: (
+          context,
+          child,
+          loadingProgress,
+        ) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return Container(
+            width: double.infinity,
+            height: 220,
+            color: Colors.grey.shade200,
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF016630),
+              ),
             ),
-          ),
-        );
-      },
-      errorBuilder: (
-        context,
-        error,
-        stackTrace,
-      ) {
-        debugPrint(
-          'ERROR IMAGEN PRODUCTO: $url',
-        );
+          );
+        },
+        errorBuilder: (
+          context,
+          error,
+          stackTrace,
+        ) {
+          debugPrint(
+            'ERROR IMAGEN PRODUCTO: $url',
+          );
 
-        return imagenPredeterminada();
-      },
-    );
+          return imagenPredeterminada();
+        },
+      );
+    }
+
+    // ========================================================
+    // SIN IMAGEN
+    // ========================================================
+
+    return imagenPredeterminada();
   }
-
-  // ========================================================
-  // SIN IMAGEN
-  // ========================================================
-
-  return imagenPredeterminada();
-}
 
   // ==========================================================
   // IMAGEN PREDETERMINADA
@@ -231,6 +231,32 @@ class _CategoryProductsScreenState
         ),
       ),
     );
+  }
+
+  // ==========================================================
+  // IMAGEN DE LA CATEGORÍA
+  // ==========================================================
+
+  String obtenerImagenCategoria() {
+    switch (widget.categoria.trim().toLowerCase()) {
+      case "agrícola":
+        return "assets/images/agricola.jpg";
+
+      case "artesanías":
+        return "assets/images/artesanias.jpg";
+
+      case "plantas":
+        return "assets/images/plantas.jpg";
+
+      case "alimentos":
+        return "assets/images/alimentos.jpg";
+
+      case "animales":
+        return "assets/images/animales.jpg";
+
+      default:
+        return "assets/images/agricola.jpg";
+    }
   }
 
   // ==========================================================
@@ -273,15 +299,53 @@ class _CategoryProductsScreenState
 
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              vertical: 25,
-              horizontal: 20,
+            padding: const EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              25,
             ),
             decoration: const BoxDecoration(
               color: Color(0xFF016630),
             ),
             child: Column(
               children: [
+                // ==============================================
+                // IMAGEN DE LA CATEGORÍA
+                // ==============================================
+
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.asset(
+                    obtenerImagenCategoria(),
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                    errorBuilder: (
+                      context,
+                      error,
+                      stackTrace,
+                    ) {
+                      return Container(
+                        width: double.infinity,
+                        height: 180,
+                        color: Colors.white24,
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 60,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+
+                // ==============================================
+                // NOMBRE DE LA CATEGORÍA
+                // ==============================================
+
                 Text(
                   widget.categoria,
                   textAlign: TextAlign.center,
@@ -293,6 +357,10 @@ class _CategoryProductsScreenState
                 ),
 
                 const SizedBox(height: 8),
+
+                // ==============================================
+                // CANTIDAD DE PRODUCTOS
+                // ==============================================
 
                 Text(
                   cargando
